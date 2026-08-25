@@ -1,0 +1,102 @@
+{
+    "$schema": "https://json.schemastore.org/claude-code-settings.json",
+    "permissions": {
+      "defaultMode": "acceptEdits",
+      "allow": [
+        "Bash(npm run dev)",
+        "Bash(npm run build)",
+        "Bash(npm run lint)",
+        "Bash(git status)",
+        "Bash(git status *)",
+        "Bash(git diff)",
+        "Bash(git diff *)",
+        "Bash(git log *)"
+      ],
+      "ask": [
+        "Bash(npm install *)",
+        "Bash(git add *)",
+        "Bash(git commit *)"
+      ],
+      "deny": [
+        "Read(./.env)",
+        "Read(./.env.*)",
+        "Edit(./CLAUDE.md)",
+        "Edit(./.claude/settings.json)",
+        "Edit(./.claude/hooks/**)",
+        "Edit(./.claude/agents/**)",
+        "Bash(git push *)",
+        "Bash(git remote *)",
+        "Bash(git -C *)",
+        "Bash(rm -rf *)",
+        "Bash(sudo *)",
+        "Bash(curl *)",
+        "Bash(wget *)"
+      ],
+      "additionalDirectories": []
+    },
+    "hooks": {
+        "SessionStart": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "node",
+                        "args": [
+                            "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "PreToolUse": [
+            {
+                "matcher": "Write|Edit",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node",
+                    "args": [
+                      "${CLAUDE_PROJECT_DIR}/.claude/hooks/workspace-guard.mjs"
+                    ]
+                  }
+                ]
+              }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Write|Edit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "node",
+                        "args": [
+                            "${CLAUDE_PROJECT_DIR}/.claude/hooks/typecheck.mjs"
+                        ],
+                        "timeout": 130
+                    }
+
+                ]        
+            }
+        ],
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "node",
+                        "args": [
+                            "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-verify.mjs"
+                        ],
+                        "timeout": 250
+                    }
+                ]
+            }
+        ]
+    },
+    "sandbox": {
+        "enabled": true,
+        "failIfUnavailable": true,
+        "allowUnsandboxedCommands": false,
+        "autoAllowBashIfSandboxed": false
+    }
+  }
