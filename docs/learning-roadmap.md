@@ -11,6 +11,24 @@ boundary should use the guided-driver loop:
 explain → predict → owner acts → inspect evidence → break safely → fix → teach back
 ```
 
+## Operating cadence
+
+Each approved product slice uses this default cadence:
+
+1. Hold one guided checkpoint at the slice's primary AI boundary.
+2. After teach-back and owner approval, let Claude Code implement mechanical
+   UI, SQL, wiring, and tests autonomously within the approved specification.
+3. Pause only for a genuine owner decision, new dependency, material
+   deviation, irreversible choice, or re-plan signal.
+4. At slice completion, run one read-only reviewer pass and the full required
+   verification suite.
+5. Commit a green slice as its own reviewable baseline before starting the
+   next slice.
+
+Routine implementation choices stay with the implementing agent. The owner
+should not act as a message relay between assistants; questions are
+consolidated at learning, deviation, review, and acceptance checkpoints.
+
 ## Phase 0 — Agent harness
 
 Learn least-privilege permissions, owner-managed boundaries, lifecycle hooks,

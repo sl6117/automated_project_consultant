@@ -33,6 +33,25 @@ explain → predict → owner acts → inspect evidence → break deliberately �
 
 Do not batch multiple new harness concepts into one step.
 
+## Product slice cadence
+
+For product work covered by an approved phase specification, optimize for one
+meaningful learning checkpoint per slice rather than one checkpoint per edit:
+
+1. Before implementation, identify the slice's primary AI or model boundary.
+2. Complete one guided-driver loop for that boundary through owner teach-back.
+3. After owner approval, implement the slice's mechanical UI, SQL, wiring, and
+   tests autonomously within the approved scope.
+4. Interrupt implementation only for an owner-action gate, a new dependency, a
+   material spec deviation, an irreversible decision, or a second failed
+   attempt that requires re-planning.
+5. At slice completion, run one read-only reviewer pass and the complete
+   required verification suite before requesting acceptance or a commit.
+
+Do not make the owner relay routine implementation choices between assistants.
+Work from the approved spec and repository context, consolidate genuine owner
+decisions, and report them at the next checkpoint.
+
 ## Prediction questions
 
 Ask concrete questions about the behavior being configured, especially:
