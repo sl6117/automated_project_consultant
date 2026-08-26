@@ -1,5 +1,9 @@
 import type { ModelClient } from "./client";
-import type { ExtractionOutput, NextQuestionOutput } from "../ledger/schemas";
+import type {
+  CoachOutput,
+  ExtractionOutput,
+  NextQuestionOutput,
+} from "../ledger/schemas";
 
 export function stubExtractionFromIdea(input: {
   idea: string;
@@ -35,6 +39,26 @@ export function stubNextQuestionFromIdea(input: {
   };
 }
 
+export function stubCoachRecommendation(input: {
+  idea: string;
+  projectName: string;
+  questionBody: string;
+}): CoachOutput {
+  return {
+    recommendation: `Answer the pending question for "${input.projectName}" by hand before building anything.`,
+    whyNow: `The open question is "${input.questionBody}". Until it is decided, every other choice about "${input.idea}" is speculative.`,
+    technique:
+      "Manual-first: walk one real example end to end on paper before automating it.",
+    tradeoffs:
+      "Deciding by hand is slower per case but exposes the constraint that automation would have hidden.",
+    gotcha:
+      "A stub recommendation restates your input; it cannot weigh evidence a live model would.",
+    confidence: "low",
+    evidenceWouldChange:
+      "A live consultation with real project evidence would replace this synthetic placeholder.",
+  };
+}
+
 export function createStubModelClient(): ModelClient {
   return {
     executionProvenance: "synthetic",
@@ -43,6 +67,9 @@ export function createStubModelClient(): ModelClient {
     },
     nextQuestion(input) {
       return stubNextQuestionFromIdea(input);
+    },
+    coachRecommendation(input) {
+      return stubCoachRecommendation(input);
     },
   };
 }

@@ -27,6 +27,7 @@ export type StatementRow = {
   provenance_source: "user" | "model-inference";
   model_call_id: string | null;
   revises_statement_id: string | null;
+  promoted_from_coach_note_id: string | null;
   created_at: string;
 };
 

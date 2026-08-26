@@ -1,0 +1,9 @@
+{
+  "recommendation": "Start with a single shared capture inbox before building any automation.",
+  "whyNow": "The pending question decides who captures tasks; a single capture point removes the largest source of dropped work before anything else is built.",
+  "technique": "Manual-first capture audit: log every incoming task and its arrival channel for one week before automating anything.",
+  "tradeoffs": "A single inbox is a bottleneck when its operator is away, but it keeps triage rules simple enough to test by hand.",
+  "gotcha": "Automating capture before naming an operator usually recreates the pile-up inside the new tool.",
+  "confidence": "medium",
+  "evidenceWouldChange": "If the week-long audit shows most tasks already arrive in one channel, integrate that channel directly instead of adding a shared inbox."
+}

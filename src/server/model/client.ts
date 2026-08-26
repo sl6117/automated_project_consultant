@@ -5,4 +5,9 @@ export type ModelClient = {
   executionProvenance: ModelExecutionProvenance;
   extractFromIdea(input: { idea: string; projectName: string }): unknown;
   nextQuestion(input: { idea: string; projectName: string }): unknown;
+  coachRecommendation(input: {
+    idea: string;
+    projectName: string;
+    questionBody: string;
+  }): unknown;
 };

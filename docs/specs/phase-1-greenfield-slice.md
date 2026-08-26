@@ -1,6 +1,6 @@
 # Phase 1 — Greenfield consultant vertical slice
 
-Status: approved. Slices 1–3 (ledger + Zod contracts, recorded extraction + approval UI, one-question loop) are implemented and reviewed. `@anthropic-ai/sdk` waits for slice 6.
+Status: approved. Slices 1–4 (ledger + Zod contracts, recorded extraction + approval UI, one-question loop, coach panel with promotion) are implemented and reviewed. `@anthropic-ai/sdk` waits for slice 6.
 
 ## Goal
 
@@ -102,7 +102,7 @@ Coach copy is omitted unless the user explicitly promotes a note. Downloads go t
 ## Implementation slices (do in order)
 
 1. **Ledger + Zod contracts** — migrations, statement/concern/question types, reject invalid writes. Unit tests only; no SDK.
-2. **Recorded extraction + approval UI** — in progress.
+2. **Recorded extraction + approval UI** — done.
 3. **One-question loop** — Fable-shaped recorded next question; answer/defer/unknown; provenance.
 4. **Coach panel** — optional, separate store, excluded from SPEC compiler tests.
 5. **Artifact compiler + downloads** — versioned Markdown; compiler unit tests.

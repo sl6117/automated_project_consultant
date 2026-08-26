@@ -5,12 +5,17 @@ import type { ModelClient } from "./client";
 const fixtureDir = join(process.cwd(), "tests/fixtures/phase-1");
 
 export function createRecordedModelClient(
-  options: { extractionPath?: string; questionPath?: string } = {},
+  options: {
+    extractionPath?: string;
+    questionPath?: string;
+    coachPath?: string;
+  } = {},
 ): ModelClient {
   const extractionPath =
     options.extractionPath ?? join(fixtureDir, "sonnet-extraction.json");
   const questionPath =
     options.questionPath ?? join(fixtureDir, "fable-next-question.json");
+  const coachPath = options.coachPath ?? join(fixtureDir, "fable-coach.json");
 
   return {
     executionProvenance: "recorded",
@@ -24,6 +29,11 @@ export function createRecordedModelClient(
     nextQuestion() {
       return JSON.parse(
         readFileSync(/*turbopackIgnore: true*/ questionPath, "utf8"),
+      ) as unknown;
+    },
+    coachRecommendation() {
+      return JSON.parse(
+        readFileSync(/*turbopackIgnore: true*/ coachPath, "utf8"),
       ) as unknown;
     },
   };

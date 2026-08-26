@@ -3,12 +3,14 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getAppDb } from "@/server/db/app-db";
+import { promoteCoachNote } from "@/server/ledger/coach-notes";
 import {
   approveConcern,
   editConcern,
   rejectConcern,
 } from "@/server/ledger/concerns";
 import { CostCapError } from "@/server/ledger/cost";
+import { CoachValidationError, requestCoaching } from "@/server/model/coach";
 import { resolveQuestion } from "@/server/ledger/questions";
 import {
   LedgerValidationError,
@@ -34,7 +36,8 @@ function domainErrorMessage(error: unknown): string | null {
   }
   if (
     error instanceof ExtractionValidationError ||
-    error instanceof NextQuestionValidationError
+    error instanceof NextQuestionValidationError ||
+    error instanceof CoachValidationError
   ) {
     return "The model returned output that failed validation. Nothing was saved.";
   }
@@ -131,6 +134,51 @@ export async function reviewConcernAction(
     } else {
       throw new Error(`Unsupported concern review intent: ${intent}`);
     }
+  } catch (error) {
+    const message = domainErrorMessage(error);
+    if (message) {
+      return { error: message };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/sessions/${sessionId}`);
+  return { error: null };
+}
+
+export async function requestCoachingAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const questionId = String(formData.get("questionId") ?? "");
+
+  let sessionId: string;
+  try {
+    ({ sessionId } = requestCoaching(getAppDb(), {
+      questionId,
+      client: resolveModelClient(),
+    }));
+  } catch (error) {
+    const message = domainErrorMessage(error);
+    if (message) {
+      return { error: message };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/sessions/${sessionId}`);
+  return { error: null };
+}
+
+export async function promoteCoachNoteAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const coachNoteId = String(formData.get("coachNoteId") ?? "");
+
+  let sessionId: string;
+  try {
+    sessionId = promoteCoachNote(getAppDb(), coachNoteId).statement.session_id;
   } catch (error) {
     const message = domainErrorMessage(error);
     if (message) {

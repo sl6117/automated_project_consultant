@@ -1,6 +1,7 @@
 import { getAppDb } from "@/server/db/app-db";
 import { getSessionDetail } from "@/server/ledger/sessions";
 import { notFound } from "next/navigation";
+import { CoachPromoteForm, CoachRequestForm } from "./coach-panel";
 import {
   ConcernReviewForm,
   QuestionResolveForm,
@@ -182,6 +183,67 @@ export default async function SessionPage({
                 <p className="mt-2 text-xs text-zinc-500">
                   Answer provenance: {question.answer?.provenance_source ?? "none"}
                 </p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-medium">Coach</h2>
+        <p className="mt-1 text-sm text-zinc-600">
+          Optional advice about the current decision. Coaching stays out of
+          exported specifications unless you promote a note, which records it
+          as your own approved decision.
+        </p>
+
+        {detail.pendingQuestion ? (
+          <CoachRequestForm questionId={detail.pendingQuestion.id} />
+        ) : detail.coachNotes.length === 0 ? (
+          <p className="mt-3 text-sm text-zinc-500">
+            Coaching is available while a question is pending.
+          </p>
+        ) : null}
+
+        {detail.coachNotes.length > 0 ? (
+          <ul className="mt-4 flex flex-col gap-3">
+            {detail.coachNotes.map((note) => (
+              <li key={note.id} className="rounded border border-zinc-200 p-4">
+                <p className="text-xs uppercase tracking-wide text-zinc-500">
+                  Confidence: {note.confidence}
+                  {note.promoted ? " · Promoted" : ""}
+                </p>
+                <p className="mt-2 font-medium">{note.recommendation}</p>
+                <dl className="mt-3 flex flex-col gap-2 text-sm text-zinc-700">
+                  <div>
+                    <dt className="font-medium text-zinc-800">Why now</dt>
+                    <dd>{note.why_now}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-zinc-800">Technique</dt>
+                    <dd>{note.technique}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-zinc-800">Tradeoffs</dt>
+                    <dd>{note.tradeoffs}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-zinc-800">Gotcha</dt>
+                    <dd>{note.gotcha}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-zinc-800">
+                      Evidence that would change this
+                    </dt>
+                    <dd>{note.evidence_would_change}</dd>
+                  </div>
+                </dl>
+                <p className="mt-2 text-xs uppercase tracking-wide text-zinc-500">
+                  Provenance: {note.provenance_source}
+                </p>
+                {note.promoted ? null : (
+                  <CoachPromoteForm coachNoteId={note.id} />
+                )}
               </li>
             ))}
           </ul>

@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { listCoachNotes, type CoachNoteRow } from "./coach-notes";
 import { listConcerns } from "./concerns";
 import { listQuestions, type QuestionWithAnswer } from "./questions";
 import { LedgerValidationError, listStatements } from "./statements";
@@ -14,6 +15,7 @@ export type SessionDetail = {
   approvedConcerns: ReturnType<typeof listConcerns>;
   pendingQuestion: QuestionWithAnswer | null;
   resolvedQuestions: QuestionWithAnswer[];
+  coachNotes: CoachNoteRow[];
 };
 
 export function getSessionDetail(
@@ -60,5 +62,6 @@ export function getSessionDetail(
     resolvedQuestions: questions.filter(
       (question) => question.status !== "pending",
     ),
+    coachNotes: listCoachNotes(db, sessionId),
   };
 }

@@ -94,6 +94,36 @@ export const resolveQuestionSchema = z
     }
   });
 
+export const coachConfidenceSchema = z.enum(["low", "medium", "high"]);
+
+// The coach boundary must state how much to trust the advice and what
+// observation would falsify it; a payload without a falsifier — or padded
+// with fields outside the contract — is rejected wholesale like any other
+// invalid model output. Required strings are trimmed before the non-empty
+// check, so whitespace-only values fail too.
+const coachField = z.string().trim().min(1);
+
+export const coachOutputSchema = z.strictObject({
+  recommendation: coachField,
+  whyNow: coachField,
+  technique: coachField,
+  tradeoffs: coachField,
+  gotcha: coachField,
+  confidence: coachConfidenceSchema,
+  evidenceWouldChange: coachField,
+});
+
+export const proposeCoachNoteSchema = coachOutputSchema.extend({
+  sessionId: z.string().min(1),
+  questionId: z.string().min(1).optional(),
+  provenanceSource: provenanceSourceSchema,
+  modelCallId: z.string().min(1).optional(),
+});
+
+export const coachNoteIdSchema = z.object({
+  coachNoteId: z.string().min(1),
+});
+
 export const statementIdSchema = z.object({
   statementId: z.string().min(1),
 });
@@ -136,6 +166,9 @@ export const recordModelCallSchema = z.object({
 });
 
 export type ProposeStatementInput = z.infer<typeof proposeStatementSchema>;
+export type CoachConfidence = z.infer<typeof coachConfidenceSchema>;
+export type CoachOutput = z.infer<typeof coachOutputSchema>;
+export type ProposeCoachNoteInput = z.infer<typeof proposeCoachNoteSchema>;
 export type EditStatementInput = z.infer<typeof editStatementSchema>;
 export type EditConcernInput = z.infer<typeof editConcernSchema>;
 export type RecordModelCallInput = z.infer<typeof recordModelCallSchema>;

@@ -211,3 +211,51 @@ test("mark the next question unknown records that disposition", async ({
   await expect(page.locator("ul.list-disc").getByText("unknown:")).toBeVisible();
   await expect(page.getByText("Answer provenance: user")).toBeVisible();
 });
+
+test("coaching shows the recorded note without touching approved state", async ({
+  page,
+}) => {
+  await startConsultation(page, "Coach request", "one household inbox");
+
+  await page.getByRole("button", { name: "Get coaching" }).click();
+
+  await expect(
+    page.getByText(
+      "Start with a single shared capture inbox before building any automation.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("Confidence: medium")).toBeVisible();
+  await expect(
+    page.getByText("Evidence that would change this"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Promote to decision" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Nothing approved yet. Exports will not include proposals."),
+  ).toBeVisible();
+});
+
+test("promoting a coach note records it as an approved user decision", async ({
+  page,
+}) => {
+  await startConsultation(page, "Coach promote", "one household inbox");
+  await page.getByRole("button", { name: "Get coaching" }).click();
+
+  await page.getByRole("button", { name: "Promote to decision" }).click();
+
+  await expect(
+    page
+      .locator("ul.list-disc")
+      .getByText(
+        "Start with a single shared capture inbox before building any automation.",
+      ),
+  ).toBeVisible();
+  await expect(page.getByText("· Promoted")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Promote to decision" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Nothing approved yet. Exports will not include proposals."),
+  ).toHaveCount(0);
+});
