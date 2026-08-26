@@ -1,0 +1,22 @@
+{
+  "statements": [
+    {
+      "kind": "fact",
+      "body": "The user wants a household life-admin inbox for incoming tasks."
+    },
+    {
+      "kind": "hypothesis",
+      "body": "Triage once per day is enough if capture is reliable."
+    }
+  ],
+  "concerns": [
+    {
+      "code": "user",
+      "coverage": "A single household operator capturing tasks from email and chat."
+    },
+    {
+      "code": "non-goals",
+      "coverage": "Not a shared family social network."
+    }
+  ]
+}

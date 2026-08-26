@@ -41,10 +41,16 @@ A localhost-only AI project-framing consultant that converts rough ideas into tr
 5. New dependencies require a concrete job that the existing stack cannot reasonably perform.
 6. Worktrees are used only for implementation tracks with independent files and acceptance criteria.
 7. Run typecheck, lint, tests, and the production build before reporting implementation complete.
+8. Follow `docs/learning-roadmap.md` at AI boundaries. Dynamic workflows remain opt-in and first appear as a bounded, read-only Phase 3 lab after the single-consultant evaluation baseline; persistent ultracode is not enabled by default.
 
 ## Current Layout
 
 - `src/app/` - Next.js application routes, layouts, and UI.
+- `src/server/` - validated ledger, database, and model-boundary code.
+- `tests/` - offline unit, contract, fixture, and browser coverage.
+- `docs/specs/` - approved phase contracts and acceptance criteria.
+- `docs/handoffs/` - point-in-time continuation context.
+- `docs/learning-roadmap.md` - canonical AI engineering learning sequence and exercises.
 - `public/` - static browser assets.
 - `AGENTS.md` - Next.js-generated framework guidance imported above.
 - `CLAUDE.md` - owner-managed project contract and operating rules.
@@ -59,3 +65,6 @@ Add paths to this section only after they actually exist. Documentation must not
 - `npm run build` - create the production build.
 - `npm run start` - run the production build.
 - `npm run lint` - run the current ESLint configuration.
+- `npm run typecheck` - run the TypeScript compiler without emitting files.
+- `npm test` - run the offline Vitest suite once.
+- `npm run test:browser` - run the offline Playwright browser suite.

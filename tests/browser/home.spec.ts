@@ -1,6 +1,213 @@
 import { expect, test } from "@playwright/test";
 
-test("home page renders", async ({ page }) => {
+// The Playwright web server runs with CONSULTANT_MODEL_MODE=recorded, so the
+// model boundary always returns tests/fixtures/phase-1 payloads regardless of
+// what the test types. Project name and idea are user-provenance fields and do
+// echo the input; statement/concern/question content comes from the fixtures.
+
+async function startConsultation(
+  page: import("@playwright/test").Page,
+  name: string,
+  idea: string,
+) {
   await page.goto("/");
-  await expect(page.locator("h1")).toContainText("page.tsx");
+  await page.getByLabel("Project name").fill(name);
+  await page.getByLabel("Rough idea").fill(idea);
+  await page.getByRole("button", { name: "Start consultation" }).click();
+  await expect(page.locator("h1")).toContainText(name);
+}
+
+test("home page shows the start form", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("h1")).toContainText(
+    "Automated Project Consultant",
+  );
+  await expect(
+    page.getByRole("status").filter({
+      hasText: "Local storage does not mean local inference",
+    }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Project name")).toBeVisible();
+  await expect(page.getByLabel("Rough idea")).toBeVisible();
+});
+
+test("start renders recorded proposals, concerns, and the next question", async ({
+  page,
+}) => {
+  await startConsultation(page, "Life Admin Inbox", "A box for household tasks");
+
+  await expect(page.getByText("A box for household tasks")).toBeVisible();
+  await expect(page.getByLabel("Statement text")).toHaveCount(2);
+  await expect(page.getByLabel("Statement text").first()).toHaveValue(
+    /household life-admin inbox/,
+  );
+  await expect(page.getByLabel("Concern coverage")).toHaveCount(2);
+  await expect(page.getByLabel("Concern coverage").first()).toHaveValue(
+    /single household operator/,
+  );
+  await expect(
+    page.getByRole("heading", { name: "Approved ledger statements" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Nothing approved yet. Exports will not include proposals."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Who captures incoming household tasks today"),
+  ).toBeVisible();
+  await expect(page.getByText("Why this question:")).toBeVisible();
+  await expect(page.getByText("Provenance: model-inference")).toBeVisible();
+});
+
+test("model content comes from the fixture, not an echo of the idea", async ({
+  page,
+}) => {
+  await startConsultation(
+    page,
+    "Ramen ops",
+    "ramen restaurant inventory and budget manager",
+  );
+
+  await expect(
+    page.getByText("ramen restaurant inventory and budget manager", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Statement text").first()).toHaveValue(
+    /household life-admin inbox/,
+  );
+  await expect(page.getByText("Working title: Ramen ops")).toHaveCount(0);
+});
+
+test("a long rough idea stays in the textarea without leaving the page", async ({
+  page,
+}) => {
+  const idea = "ramen inventory ".repeat(80);
+  await page.goto("/");
+  await page.getByLabel("Project name").fill("Ramen ops");
+  await page.getByLabel("Rough idea").fill(idea);
+
+  await expect(page).toHaveURL("/");
+  await expect(page.getByLabel("Rough idea")).toHaveValue(idea);
+  await expect(page.locator("h1")).toContainText(
+    "Automated Project Consultant",
+  );
+});
+
+test("approve moves a proposal into approved ledger statements", async ({
+  page,
+}) => {
+  await startConsultation(page, "Approve flow", "A box for household tasks");
+
+  await page.getByRole("button", { name: "Approve", exact: true }).first().click();
+
+  await expect(
+    page.getByText("The user wants a household life-admin inbox"),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Nothing approved yet. Exports will not include proposals."),
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Statement text")).toHaveCount(1);
+});
+
+test("reject removes a proposal without approving it", async ({ page }) => {
+  await startConsultation(page, "Reject flow", "A box for household tasks");
+
+  const card = page.locator("li").filter({ hasText: "hypothesis" });
+  await expect(card.getByLabel("Statement text")).toHaveValue(
+    /Triage once per day/,
+  );
+  await card.getByRole("button", { name: "Reject", exact: true }).click();
+
+  await expect(page.locator("li").filter({ hasText: "hypothesis" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByLabel("Statement text")).toHaveCount(1);
+  await expect(page.getByText("Triage once per day")).toHaveCount(0);
+  await expect(
+    page.getByText("Nothing approved yet. Exports will not include proposals."),
+  ).toBeVisible();
+});
+
+test("edit approves the user's wording in place of the proposal", async ({
+  page,
+}) => {
+  await startConsultation(page, "Edit flow", "A box for household tasks");
+
+  const statement = page.getByLabel("Statement text").first();
+  await statement.fill("The user wants one inbox for all household admin.");
+  await page.getByRole("button", { name: "Save edit" }).first().click();
+
+  await expect(
+    page.getByText("The user wants one inbox for all household admin."),
+  ).toBeVisible();
+  await expect(page.getByLabel("Statement text")).toHaveCount(1);
+  await expect(
+    page.getByText("Nothing approved yet. Exports will not include proposals."),
+  ).toHaveCount(0);
+});
+
+test("approve a concern coverage claim", async ({ page }) => {
+  await startConsultation(page, "Concern flow", "A box for household tasks");
+
+  await page.getByRole("button", { name: "Approve concern" }).first().click();
+
+  await expect(
+    page.getByText("A single household operator capturing tasks"),
+  ).toBeVisible();
+  await expect(page.getByLabel("Concern coverage")).toHaveCount(1);
+  await expect(
+    page.getByText("No concern coverage approved yet."),
+  ).toHaveCount(0);
+});
+
+test("record an answer as an approved decision with user provenance", async ({
+  page,
+}) => {
+  await startConsultation(page, "Capture box", "one household inbox");
+
+  await page.getByLabel("Answer").fill(
+    "A daily list of tasks captured from one inbox.",
+  );
+  await page.getByRole("button", { name: "Record answer" }).click();
+
+  await expect(
+    page.getByText("A daily list of tasks captured from one inbox."),
+  ).toHaveCount(2);
+  await expect(page.getByText("decision:")).toBeVisible();
+  await expect(page.getByText("Answer provenance: user")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record answer" })).toHaveCount(
+    0,
+  );
+});
+
+test("a blank answer shows a readable error and mutates nothing", async ({
+  page,
+}) => {
+  await startConsultation(page, "Blank answer", "one household inbox");
+
+  // Whitespace passes the browser's `required` check, so this exercises the
+  // server-side validation path and its action-state error.
+  await page.getByLabel("Answer").fill("   ");
+  await page.getByRole("button", { name: "Record answer" }).click();
+
+  await expect(
+    page.getByRole("alert").filter({
+      hasText: "Type an answer before recording it",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record answer" })).toBeVisible();
+  await expect(
+    page.getByText("Nothing approved yet. Exports will not include proposals."),
+  ).toBeVisible();
+});
+
+test("mark the next question unknown records that disposition", async ({
+  page,
+}) => {
+  await startConsultation(page, "Unknown path", "not sure who operates this");
+
+  await page.getByRole("button", { name: "Mark unknown" }).click();
+
+  await expect(page.locator("ul.list-disc").getByText("unknown:")).toBeVisible();
+  await expect(page.getByText("Answer provenance: user")).toBeVisible();
 });

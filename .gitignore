@@ -40,6 +40,9 @@ yarn-error.log*
 # local Claude Code sandbox overrides
 .claude/settings.local.json
 
+# live consultation ledger and raw model payloads
+/data/
+
 # vercel
 .vercel
 
