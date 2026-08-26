@@ -77,3 +77,45 @@ describe("migration 005_coach_notes", () => {
     );
   });
 });
+
+describe("migration 006_artifact_sets", () => {
+  test("refuses to replace a legacy artifact_versions table that holds rows", () => {
+    const db = openLedgerBeforeMigration(6);
+    db.prepare(
+      "INSERT INTO projects (id, name, created_at) VALUES ('p1', 'Legacy', 't0')",
+    ).run();
+    db.prepare(
+      "INSERT INTO discovery_sessions (id, project_id, created_at) VALUES ('s1', 'p1', 't0')",
+    ).run();
+    db.prepare(
+      "INSERT INTO artifact_versions (id, session_id, filename, body, created_at) VALUES ('a1', 's1', 'SPEC.md', 'legacy body', 't0')",
+    ).run();
+
+    expect(() => applyMigration(db, "006_artifact_sets.sql")).toThrow(/CHECK/);
+
+    expect(columnNames(db, "artifact_versions")).not.toContain(
+      "artifact_set_id",
+    );
+    const count = db
+      .prepare("SELECT COUNT(*) AS n FROM artifact_versions")
+      .get() as { n: number };
+    expect(count.n).toBe(1);
+  });
+
+  test("replaces an empty legacy table and installs immutability triggers", () => {
+    const db = openLedgerBeforeMigration(6);
+
+    applyMigration(db, "006_artifact_sets.sql");
+
+    expect(columnNames(db, "artifact_versions")).toContain("artifact_set_id");
+    const triggers = (
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'trigger' AND tbl_name = 'artifact_versions'",
+        )
+        .all() as { name: string }[]
+    ).map((row) => row.name);
+    expect(triggers).toContain("artifact_versions_immutable_update");
+    expect(triggers).toContain("artifact_versions_immutable_delete");
+  });
+});

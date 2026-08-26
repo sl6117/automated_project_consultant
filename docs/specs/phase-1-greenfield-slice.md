@@ -1,6 +1,6 @@
 # Phase 1 — Greenfield consultant vertical slice
 
-Status: approved. Slices 1–4 (ledger + Zod contracts, recorded extraction + approval UI, one-question loop, coach panel with promotion) are implemented and reviewed. `@anthropic-ai/sdk` waits for slice 6.
+Status: approved. Slices 1–5 (ledger + Zod contracts, recorded extraction + approval UI, one-question loop, coach panel with promotion, ledger-only artifact compiler with immutable versioned downloads) are implemented and reviewed. `@anthropic-ai/sdk` waits for slice 6.
 
 ## Goal
 

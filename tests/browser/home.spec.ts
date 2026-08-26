@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
 // The Playwright web server runs with CONSULTANT_MODEL_MODE=recorded, so the
@@ -258,4 +259,87 @@ test("promoting a coach note records it as an approved user decision", async ({
   await expect(
     page.getByText("Nothing approved yet. Exports will not include proposals."),
   ).toHaveCount(0);
+});
+
+test("export is blocked until a statement is approved", async ({ page }) => {
+  await startConsultation(page, "Export gate", "one household inbox");
+
+  await page.getByRole("button", { name: "Generate export" }).click();
+
+  await expect(
+    page.getByRole("alert").filter({
+      hasText: "Approve at least one statement before generating an export",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "SPEC.md" })).toHaveCount(0);
+});
+
+test("a downloaded export contains approved state and no unpromoted coaching", async ({
+  page,
+}) => {
+  await startConsultation(page, "Export flow", "one household inbox");
+  await page.getByRole("button", { name: "Approve", exact: true }).first().click();
+  await page.getByRole("button", { name: "Get coaching" }).click();
+  await expect(
+    page.getByText(
+      "Start with a single shared capture inbox before building any automation.",
+    ),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Generate export" }).click();
+  const specLink = page.getByRole("link", { name: "SPEC.md" });
+  await expect(specLink).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await specLink.click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("SPEC.md");
+
+  const path = await download.path();
+  const body = readFileSync(path, "utf8");
+  expect(body).toContain("The user wants a household life-admin inbox");
+  expect(body).not.toContain(
+    "Start with a single shared capture inbox before building any automation.",
+  );
+});
+
+test("downloads serve the persisted snapshot and refuse foreign lookups", async ({
+  page,
+}) => {
+  await startConsultation(page, "Snapshot flow", "one household inbox");
+  await page.getByRole("button", { name: "Approve", exact: true }).first().click();
+  await page.getByRole("button", { name: "Generate export" }).click();
+
+  const assumptionsLink = page.getByRole("link", { name: "ASSUMPTIONS.md" });
+  await expect(assumptionsLink).toBeVisible();
+  const href = await assumptionsLink.getAttribute("href");
+  if (!href) {
+    throw new Error("Expected a download href");
+  }
+
+  // Mutate the ledger after the snapshot: approve the remaining hypothesis,
+  // which a fresh compile would list under assumptions.
+  const card = page.locator("li").filter({ hasText: "hypothesis" });
+  await card.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(
+    page
+      .locator("ul.list-disc")
+      .getByText("Triage once per day is enough if capture is reliable."),
+  ).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await assumptionsLink.click();
+  const download = await downloadPromise;
+  const body = readFileSync(await download.path(), "utf8");
+  expect(body).toContain("No approved assumptions yet.");
+  expect(body).not.toContain("Triage once per day");
+
+  // Unknown version id and a version id under the wrong session both 404.
+  const sessionPath = href.slice(0, href.lastIndexOf("/artifacts/"));
+  const missing = await page.request.get(`${sessionPath}/artifacts/missing-id`);
+  expect(missing.status()).toBe(404);
+  const foreign = await page.request.get(
+    href.replace(sessionPath, "/sessions/some-other-session"),
+  );
+  expect(foreign.status()).toBe(404);
 });

@@ -2,6 +2,7 @@ import { getAppDb } from "@/server/db/app-db";
 import { getSessionDetail } from "@/server/ledger/sessions";
 import { notFound } from "next/navigation";
 import { CoachPromoteForm, CoachRequestForm } from "./coach-panel";
+import { GenerateExportForm } from "./exports-panel";
 import {
   ConcernReviewForm,
   QuestionResolveForm,
@@ -244,6 +245,44 @@ export default async function SessionPage({
                 {note.promoted ? null : (
                   <CoachPromoteForm coachNoteId={note.id} />
                 )}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-medium">Exports</h2>
+        <p className="mt-1 text-sm text-zinc-600">
+          Markdown projections compiled from approved ledger state only.
+          Proposals and unpromoted coaching are never included. Each generation
+          is an immutable snapshot.
+        </p>
+        <GenerateExportForm sessionId={detail.sessionId} />
+
+        {detail.artifactSets.length > 0 ? (
+          <ul className="mt-4 flex flex-col gap-3">
+            {detail.artifactSets.map((set, index) => (
+              <li
+                key={set.artifactSetId}
+                className="rounded border border-zinc-200 p-4 text-sm"
+              >
+                <p className="text-xs uppercase tracking-wide text-zinc-500">
+                  Export {detail.artifactSets.length - index} ·{" "}
+                  {set.createdAt}
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-3">
+                  {set.files.map((file) => (
+                    <li key={file.id}>
+                      <a
+                        href={`/sessions/${detail.sessionId}/artifacts/${file.id}`}
+                        className="underline"
+                      >
+                        {file.filename}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </li>
             ))}
           </ul>

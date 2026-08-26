@@ -3,6 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getAppDb } from "@/server/db/app-db";
+import { compileArtifacts } from "@/server/artifacts/compiler";
+import {
+  ExportNotReadyError,
+  recordArtifactSet,
+} from "@/server/ledger/artifact-versions";
 import { promoteCoachNote } from "@/server/ledger/coach-notes";
 import {
   approveConcern,
@@ -40,6 +45,9 @@ function domainErrorMessage(error: unknown): string | null {
     error instanceof CoachValidationError
   ) {
     return "The model returned output that failed validation. Nothing was saved.";
+  }
+  if (error instanceof ExportNotReadyError) {
+    return "Approve at least one statement before generating an export.";
   }
   if (error instanceof LedgerValidationError) {
     return "That item has already been reviewed or no longer exists. Reload the page to see its current state.";
@@ -179,6 +187,33 @@ export async function promoteCoachNoteAction(
   let sessionId: string;
   try {
     sessionId = promoteCoachNote(getAppDb(), coachNoteId).statement.session_id;
+  } catch (error) {
+    const message = domainErrorMessage(error);
+    if (message) {
+      return { error: message };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/sessions/${sessionId}`);
+  return { error: null };
+}
+
+export async function generateArtifactsAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const requestedSessionId = String(formData.get("sessionId") ?? "");
+
+  const db = getAppDb();
+  let sessionId: string;
+  try {
+    const files = compileArtifacts(db, requestedSessionId);
+    const rows = recordArtifactSet(db, {
+      sessionId: requestedSessionId,
+      files,
+    });
+    sessionId = rows[0].session_id;
   } catch (error) {
     const message = domainErrorMessage(error);
     if (message) {

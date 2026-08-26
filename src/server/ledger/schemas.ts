@@ -124,6 +124,38 @@ export const coachNoteIdSchema = z.object({
   coachNoteId: z.string().min(1),
 });
 
+export const artifactFilenameSchema = z.enum([
+  "SPEC.md",
+  "ROADMAP.md",
+  "AGENTS.md",
+  "DECISIONS.md",
+  "ASSUMPTIONS.md",
+  "OPEN_QUESTIONS.md",
+]);
+
+// One generation always snapshots the complete artifact set, so a partial or
+// duplicated file list is a caller bug, not a smaller export.
+export const recordArtifactSetSchema = z.object({
+  sessionId: z.string().min(1),
+  files: z
+    .array(
+      z.strictObject({
+        filename: artifactFilenameSchema,
+        body: z.string().min(1),
+      }),
+    )
+    .length(artifactFilenameSchema.options.length)
+    .superRefine((files, ctx) => {
+      const unique = new Set(files.map((file) => file.filename));
+      if (unique.size !== files.length) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Artifact filenames within a set must be unique",
+        });
+      }
+    }),
+});
+
 export const statementIdSchema = z.object({
   statementId: z.string().min(1),
 });
@@ -166,6 +198,8 @@ export const recordModelCallSchema = z.object({
 });
 
 export type ProposeStatementInput = z.infer<typeof proposeStatementSchema>;
+export type ArtifactFilename = z.infer<typeof artifactFilenameSchema>;
+export type RecordArtifactSetInput = z.infer<typeof recordArtifactSetSchema>;
 export type CoachConfidence = z.infer<typeof coachConfidenceSchema>;
 export type CoachOutput = z.infer<typeof coachOutputSchema>;
 export type ProposeCoachNoteInput = z.infer<typeof proposeCoachNoteSchema>;
