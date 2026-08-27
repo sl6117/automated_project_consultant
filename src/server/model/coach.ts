@@ -1,15 +1,16 @@
 import type Database from "better-sqlite3";
 import { proposeCoachNote, type CoachNoteRow } from "../ledger/coach-notes";
-import { CostCapError } from "../ledger/cost";
-import { recordModelCall } from "../ledger/model-calls";
+import { listConcerns } from "../ledger/concerns";
 import { getQuestion } from "../ledger/questions";
 import {
   coachOutputSchema,
-  type ModelExecutionProvenance,
+  fableEnvelopeSchema,
+  type CoachOutput,
 } from "../ledger/schemas";
-import { LedgerValidationError } from "../ledger/statements";
+import { LedgerValidationError, listStatements } from "../ledger/statements";
+import { runModelAttempt } from "./attempt-runner";
 import type { ModelClient } from "./client";
-import { modelCatalog } from "./config";
+import { describeCoachRequest } from "./prompt";
 
 export class CoachValidationError extends Error {
   constructor(message: string) {
@@ -18,61 +19,35 @@ export class CoachValidationError extends Error {
   }
 }
 
-export function applyCoachNote(
-  db: Database.Database,
-  input: {
-    sessionId: string;
-    questionId?: string;
-    payload: unknown;
-    executionProvenance: ModelExecutionProvenance;
-  },
-): { note: CoachNoteRow } {
-  const parsed = coachOutputSchema.safeParse(input.payload);
+export function parseCoach(payload: unknown): CoachOutput {
+  const envelope = fableEnvelopeSchema.safeParse(payload);
+  if (!envelope.success) {
+    throw new CoachValidationError(envelope.error.message);
+  }
+  // A valid payload under the wrong task tag is still rejected.
+  if (envelope.data.task !== "coach") {
+    throw new CoachValidationError(
+      `Expected task coach, got ${envelope.data.task}`,
+    );
+  }
+  const parsed = coachOutputSchema.safeParse(envelope.data.payload);
   if (!parsed.success) {
     throw new CoachValidationError(parsed.error.message);
   }
-
-  const run = db.transaction(() => {
-    const call = recordModelCall(db, {
-      sessionId: input.sessionId,
-      modelAlias: modelCatalog.fable.alias,
-      executionProvenance: input.executionProvenance,
-      estimatedCostCents: 0,
-    });
-
-    const note = proposeCoachNote(db, {
-      ...parsed.data,
-      sessionId: input.sessionId,
-      questionId: input.questionId,
-      provenanceSource: "model-inference",
-      modelCallId: call.id,
-    });
-
-    return { note };
-  });
-
-  try {
-    return run();
-  } catch (error) {
-    if (
-      error instanceof CoachValidationError ||
-      error instanceof LedgerValidationError ||
-      error instanceof CostCapError
-    ) {
-      throw error;
-    }
-    throw new CoachValidationError(
-      error instanceof Error ? error.message : "Coach note could not be applied",
-    );
-  }
+  return parsed.data;
 }
 
-// The model call happens before any transaction opens: a rollback cannot
-// un-spend a model call, and an open transaction must not wait on model I/O.
-export function requestCoaching(
+// Coaching runs against an existing consultation. Its attempt receipt is
+// recorded whatever happens, but a failure here never touches the session's
+// initialization_status: a live consultation stays active.
+export async function requestCoaching(
   db: Database.Database,
-  input: { questionId: string; client: ModelClient },
-): { note: CoachNoteRow; sessionId: string } {
+  input: {
+    questionId: string;
+    client: ModelClient;
+    confirmedOverCap?: boolean;
+  },
+): Promise<{ note: CoachNoteRow; sessionId: string }> {
   const question = getQuestion(db, input.questionId);
 
   const context = db
@@ -91,17 +66,54 @@ export function requestCoaching(
     );
   }
 
-  const payload = input.client.coachRecommendation({
-    idea: context.idea,
+  // Coaching is grounded in the approved ledger, not just the raw idea:
+  // approved statements and concern coverage travel with the request.
+  const approvedStatements = listStatements(
+    db,
+    question.session_id,
+    "approved",
+  ).map((row) => row.body);
+  const approvedConcerns = listConcerns(
+    db,
+    question.session_id,
+    "approved",
+  ).map((row) => `${row.code}: ${row.coverage}`);
+
+  // One request description: the estimate and the client call both consume
+  // the same object.
+  const request = describeCoachRequest({
     projectName: context.project_name,
+    idea: context.idea,
     questionBody: question.body,
+    approvedStatements,
+    approvedConcerns,
   });
 
-  const { note } = applyCoachNote(db, {
+  const { value, attempt } = await runModelAttempt({
+    db,
+    sessionId: question.session_id,
+    alias: "fable",
+    executionProvenance: input.client.executionProvenance,
+    request,
+    confirmedOverCap: input.confirmedOverCap,
+    invoke: () =>
+      input.client.coachRecommendation({
+        idea: context.idea,
+        projectName: context.project_name,
+        questionBody: question.body,
+        approvedStatements,
+        approvedConcerns,
+        request,
+      }),
+    parse: parseCoach,
+  });
+
+  const note = proposeCoachNote(db, {
+    ...value,
     sessionId: question.session_id,
     questionId: question.id,
-    payload,
-    executionProvenance: input.client.executionProvenance,
+    provenanceSource: "model-inference",
+    modelCallId: attempt.id,
   });
 
   return { note, sessionId: question.session_id };

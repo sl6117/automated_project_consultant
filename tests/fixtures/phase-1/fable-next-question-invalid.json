@@ -1,4 +1,7 @@
 {
-  "body": "",
-  "whySelected": "An empty question body must be rejected."
+  "task": "next_question",
+  "payload": {
+    "body": "",
+    "whySelected": "An empty question body must be rejected."
+  }
 }

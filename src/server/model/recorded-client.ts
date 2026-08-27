@@ -19,22 +19,25 @@ export function createRecordedModelClient(
 
   return {
     executionProvenance: "recorded",
-    extractFromIdea() {
+    async extractFromIdea() {
       // Fixture reads must not pull the whole project tree into the traced
       // server build output.
-      return JSON.parse(
+      const payload = JSON.parse(
         readFileSync(/*turbopackIgnore: true*/ extractionPath, "utf8"),
       ) as unknown;
+      return { payload, usage: null };
     },
-    nextQuestion() {
-      return JSON.parse(
+    async nextQuestion() {
+      const payload = JSON.parse(
         readFileSync(/*turbopackIgnore: true*/ questionPath, "utf8"),
       ) as unknown;
+      return { payload, usage: null };
     },
-    coachRecommendation() {
-      return JSON.parse(
+    async coachRecommendation() {
+      const payload = JSON.parse(
         readFileSync(/*turbopackIgnore: true*/ coachPath, "utf8"),
       ) as unknown;
+      return { payload, usage: null };
     },
   };
 }

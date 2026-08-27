@@ -3,6 +3,12 @@ import { getSessionDetail } from "@/server/ledger/sessions";
 import { notFound } from "next/navigation";
 import { CoachPromoteForm, CoachRequestForm } from "./coach-panel";
 import { GenerateExportForm } from "./exports-panel";
+import { MICROCENTS_PER_CENT } from "@/server/model/config";
+import { RetryConsultationForm } from "./retry-form";
+
+function dollars(microcents: number): string {
+  return `$${(microcents / (100 * MICROCENTS_PER_CENT)).toFixed(4)}`;
+}
 import {
   ConcernReviewForm,
   QuestionResolveForm,
@@ -46,10 +52,32 @@ export default async function SessionPage({
         ) : null}
         <p className="mt-3 text-sm text-zinc-600">
           Offline extraction is a restatement of your idea, not a live model.
-          A recorded fixture is used only in tests. The next question is a Fable
-          restatement until a live model is wired.
+          A recorded fixture is used only in tests. Live mode calls Anthropic
+          from this machine&apos;s server process only.
+        </p>
+        <p className="mt-2 text-sm text-zinc-700">
+          Model spend: {dollars(detail.spend.settledActualMicrocents)} used
+          {detail.spend.reservedEstimateMicrocents > 0
+            ? ` + ${dollars(detail.spend.reservedEstimateMicrocents)} reserved`
+            : ""}{" "}
+          of {dollars(detail.spend.capMicrocents)} cap
         </p>
       </div>
+
+      {detail.initializationStatus !== "active" ? (
+        <section className="rounded border border-red-300 bg-red-50 p-4">
+          <h2 className="text-lg font-medium text-red-900">
+            Session start incomplete
+          </h2>
+          <p className="mt-1 text-sm text-red-900">
+            The consultation did not finish starting: a model call failed or
+            its output was rejected. Any model spend is recorded above.
+            Retrying reuses this session and its budget cap — it never opens a
+            fresh cap.
+          </p>
+          <RetryConsultationForm sessionId={detail.sessionId} />
+        </section>
+      ) : null}
 
       <section>
         <h2 className="text-lg font-medium">Proposed statements</h2>

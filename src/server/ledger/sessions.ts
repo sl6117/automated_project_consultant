@@ -5,6 +5,8 @@ import {
 } from "./artifact-versions";
 import { listCoachNotes, type CoachNoteRow } from "./coach-notes";
 import { listConcerns } from "./concerns";
+import { sessionSpend, type SessionSpend } from "./model-attempts";
+import type { SessionInitializationStatus } from "./schemas";
 import { listQuestions, type QuestionWithAnswer } from "./questions";
 import { LedgerValidationError, listStatements } from "./statements";
 
@@ -21,6 +23,8 @@ export type SessionDetail = {
   resolvedQuestions: QuestionWithAnswer[];
   coachNotes: CoachNoteRow[];
   artifactSets: ArtifactSet[];
+  initializationStatus: SessionInitializationStatus;
+  spend: SessionSpend;
 };
 
 export type ArtifactSet = {
@@ -54,6 +58,7 @@ export function getSessionDetail(
     .prepare(
       `SELECT
          s.id AS session_id,
+         s.initialization_status AS initialization_status,
          p.id AS project_id,
          p.name AS project_name,
          p.idea AS idea
@@ -64,6 +69,7 @@ export function getSessionDetail(
     .get(sessionId) as
     | {
         session_id: string;
+        initialization_status: SessionInitializationStatus;
         project_id: string;
         project_name: string;
         idea: string;
@@ -92,5 +98,7 @@ export function getSessionDetail(
     ),
     coachNotes: listCoachNotes(db, sessionId),
     artifactSets: groupArtifactSets(listArtifactVersions(db, sessionId)),
+    initializationStatus: row.initialization_status,
+    spend: sessionSpend(db, sessionId),
   };
 }

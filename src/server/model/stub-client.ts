@@ -62,14 +62,24 @@ export function stubCoachRecommendation(input: {
 export function createStubModelClient(): ModelClient {
   return {
     executionProvenance: "synthetic",
-    extractFromIdea(input) {
-      return stubExtractionFromIdea(input);
+    async extractFromIdea(input) {
+      return { payload: stubExtractionFromIdea(input), usage: null };
     },
-    nextQuestion(input) {
-      return stubNextQuestionFromIdea(input);
+    async nextQuestion(input) {
+      // Fable responses arrive in the shared discriminated envelope.
+      return {
+        payload: {
+          task: "next_question",
+          payload: stubNextQuestionFromIdea(input),
+        },
+        usage: null,
+      };
     },
-    coachRecommendation(input) {
-      return stubCoachRecommendation(input);
+    async coachRecommendation(input) {
+      return {
+        payload: { task: "coach", payload: stubCoachRecommendation(input) },
+        usage: null,
+      };
     },
   };
 }

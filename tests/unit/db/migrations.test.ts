@@ -119,3 +119,74 @@ describe("migration 006_artifact_sets", () => {
     expect(triggers).toContain("artifact_versions_immutable_delete");
   });
 });
+
+describe("migration 007_live_model_attempts", () => {
+  test("is additive: linked rows keep their ids and foreign keys stay clean", () => {
+    const db = openLedgerBeforeMigration(7);
+    db.prepare(
+      "INSERT INTO projects (id, name, idea, created_at) VALUES ('p1', 'Linked', 'idea', 't0')",
+    ).run();
+    db.prepare(
+      `INSERT INTO discovery_sessions (
+        id, project_id, estimated_cost_cents, cap_cents, created_at
+      ) VALUES ('s1', 'p1', 40, 500, 't0')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO model_calls (
+        id, session_id, model_alias, recorded, estimated_cost_cents,
+        created_at, execution_provenance
+      ) VALUES ('call-1', 's1', 'sonnet', 1, 40, 't0', 'recorded')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO statements (
+        id, session_id, kind, status, body, provenance_source, model_call_id, created_at
+      ) VALUES ('st1', 's1', 'fact', 'proposed', 'linked fact', 'model-inference', 'call-1', 't0')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO questions (
+        id, session_id, body, why_selected, status, provenance_source, model_call_id, created_at
+      ) VALUES ('q1', 's1', 'Q?', 'why', 'pending', 'model-inference', 'call-1', 't0')`,
+    ).run();
+    db.prepare(
+      `INSERT INTO coach_notes (
+        id, session_id, question_id, recommendation, why_now, technique,
+        tradeoffs, gotcha, confidence, evidence_would_change,
+        provenance_source, model_call_id, created_at
+      ) VALUES ('cn1', 's1', 'q1', 'rec', 'now', 'tech', 'trade', 'gotcha',
+        'low', 'evidence', 'model-inference', 'call-1', 't0')`,
+    ).run();
+
+    applyMigration(db, "007_live_model_attempts.sql");
+
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toStrictEqual([]);
+
+    const call = db
+      .prepare("SELECT * FROM model_calls WHERE id = 'call-1'")
+      .get() as {
+      id: string;
+      status: string;
+      estimated_cost_microcents: number;
+      actual_cost_microcents: number;
+    };
+    expect(call.id).toBe("call-1");
+    expect(call.status).toBe("succeeded");
+    expect(call.estimated_cost_microcents).toBe(40_000_000);
+    expect(call.actual_cost_microcents).toBe(40_000_000);
+
+    const session = db
+      .prepare("SELECT * FROM discovery_sessions WHERE id = 's1'")
+      .get() as { initialization_status: string; cap_microcents: number };
+    expect(session.initialization_status).toBe("active");
+    expect(session.cap_microcents).toBe(500_000_000);
+
+    const links = db
+      .prepare(
+        `SELECT
+           (SELECT model_call_id FROM statements WHERE id = 'st1') AS s,
+           (SELECT model_call_id FROM questions WHERE id = 'q1') AS q,
+           (SELECT model_call_id FROM coach_notes WHERE id = 'cn1') AS c`,
+      )
+      .get() as { s: string; q: string; c: string };
+    expect(links).toStrictEqual({ s: "call-1", q: "call-1", c: "call-1" });
+  });
+});

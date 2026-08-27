@@ -1,4 +1,7 @@
 {
-  "body": "Who captures incoming household tasks today, and where do they pile up?",
-  "whySelected": "The extraction restates the inbox idea but does not name an operator or capture surface. That choice bounds workflow and data before any other slice."
+  "task": "next_question",
+  "payload": {
+    "body": "Who captures incoming household tasks today, and where do they pile up?",
+    "whySelected": "The extraction restates the inbox idea but does not name an operator or capture surface. That choice bounds workflow and data before any other slice."
+  }
 }

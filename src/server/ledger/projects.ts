@@ -1,6 +1,9 @@
 import type Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
-import { DEFAULT_SESSION_CAP_CENTS } from "../model/config";
+import {
+  DEFAULT_SESSION_CAP_CENTS,
+  MICROCENTS_PER_CENT,
+} from "../model/config";
 
 export function nowIso(): string {
   return new Date().toISOString();
@@ -24,10 +27,13 @@ export function createSession(
   capCents: number = DEFAULT_SESSION_CAP_CENTS,
 ): { id: string } {
   const id = randomUUID();
+  // Sessions begin 'starting'; the atomic content commit of extraction plus
+  // first question flips them to 'active'.
   db.prepare(
     `INSERT INTO discovery_sessions (
-      id, project_id, estimated_cost_cents, cap_cents, created_at
-    ) VALUES (?, ?, 0, ?, ?)`,
-  ).run(id, projectId, capCents, nowIso());
+      id, project_id, estimated_cost_cents, cap_cents, cap_microcents,
+      initialization_status, created_at
+    ) VALUES (?, ?, 0, ?, ?, 'starting', ?)`,
+  ).run(id, projectId, capCents, capCents * MICROCENTS_PER_CENT, nowIso());
   return { id };
 }

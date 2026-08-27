@@ -1,9 +1,12 @@
 {
-  "recommendation": "Start with a single shared capture inbox before building any automation.",
-  "whyNow": "The pending question decides who captures tasks.",
-  "technique": "Manual-first capture audit for one week.",
-  "tradeoffs": "A single inbox is a bottleneck when its operator is away.",
-  "gotcha": "Automating capture before naming an operator recreates the pile-up.",
-  "confidence": "very high",
-  "evidenceWouldChange": "A capture audit showing one dominant arrival channel."
+  "task": "coach",
+  "payload": {
+    "recommendation": "Start with a single shared capture inbox before building any automation.",
+    "whyNow": "The pending question decides who captures tasks.",
+    "technique": "Manual-first capture audit for one week.",
+    "tradeoffs": "A single inbox is a bottleneck when its operator is away.",
+    "gotcha": "Automating capture before naming an operator recreates the pile-up.",
+    "confidence": "very high",
+    "evidenceWouldChange": "A capture audit showing one dominant arrival channel."
+  }
 }

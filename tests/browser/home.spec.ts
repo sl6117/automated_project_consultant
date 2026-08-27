@@ -49,6 +49,7 @@ test("start renders recorded proposals, concerns, and the next question", async 
   await expect(
     page.getByRole("heading", { name: "Approved ledger statements" }),
   ).toBeVisible();
+  await expect(page.getByText(/Model spend: \$0\.0000 used of \$5\.0000 cap/)).toBeVisible();
   await expect(
     page.getByText("Nothing approved yet. Exports will not include proposals."),
   ).toBeVisible();

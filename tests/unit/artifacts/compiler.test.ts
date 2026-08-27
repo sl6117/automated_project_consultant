@@ -144,9 +144,9 @@ describe("compileArtifacts", () => {
     expect(decisions?.body).toContain("COACH-PROMOTED-MARKER");
   });
 
-  test("an answered question appears exactly once per file", () => {
+  test("an answered question appears exactly once per file", async () => {
     const db = openMemoryLedger();
-    const { sessionId } = extractAndStartSession(db, {
+    const { sessionId } = await extractAndStartSession(db, {
       projectName: "Answered once",
       idea: "one household inbox",
       client: createRecordedModelClient(),

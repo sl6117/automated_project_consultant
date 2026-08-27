@@ -30,6 +30,10 @@ export function CoachRequestForm({ questionId }: { questionId: string }) {
     <form action={formAction} className="mt-3 flex flex-col gap-2">
       <input type="hidden" name="questionId" value={questionId} />
       <ActionError error={state.error} />
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="confirmedOverCap" />
+        Confirm spending over the session cap
+      </label>
       <button
         type="submit"
         disabled={isPending}

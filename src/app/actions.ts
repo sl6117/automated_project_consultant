@@ -15,6 +15,7 @@ import {
   rejectConcern,
 } from "@/server/ledger/concerns";
 import { CostCapError } from "@/server/ledger/cost";
+import { ModelTransportError } from "@/server/model/attempt-runner";
 import { CoachValidationError, requestCoaching } from "@/server/model/coach";
 import { resolveQuestion } from "@/server/ledger/questions";
 import {
@@ -26,6 +27,8 @@ import {
 import {
   ExtractionValidationError,
   extractAndStartSession,
+  retryStartSession,
+  type SessionStartResult,
 } from "@/server/model/extract";
 import { resolveModelClient } from "@/server/model/mode";
 import { NextQuestionValidationError } from "@/server/model/next-question";
@@ -45,6 +48,9 @@ function domainErrorMessage(error: unknown): string | null {
     error instanceof CoachValidationError
   ) {
     return "The model returned output that failed validation. Nothing was saved.";
+  }
+  if (error instanceof ModelTransportError) {
+    return "The model call could not complete. Recorded spend was kept; nothing else was saved. Retry when ready.";
   }
   if (error instanceof ExportNotReadyError) {
     return "Approve at least one statement before generating an export.";
@@ -66,13 +72,47 @@ export async function createConsultationAction(
     return { error: "Project name and rough idea are both required." };
   }
 
-  let sessionId: string;
+  // Domain failures (validation, transport, cost cap) come back as a
+  // 'failed' session, not an exception: the session page renders that state
+  // with recorded spend and a retry that reuses the same session and cap.
+  const { sessionId } = await extractAndStartSession(getAppDb(), {
+    projectName: name,
+    idea,
+    client: resolveModelClient(),
+  });
+
+  redirect(`/sessions/${sessionId}`);
+}
+
+function startFailureMessage(
+  failure: SessionStartResult["failure"],
+): string | null {
+  if (failure === "cost-cap") {
+    return "This would exceed the session model budget cap. Tick the over-cap confirmation to proceed anyway.";
+  }
+  if (failure === "transport") {
+    return "The model call could not complete. Recorded spend was kept; nothing else was saved. Retry when ready.";
+  }
+  if (failure) {
+    return "The model returned output that failed validation. The spend was recorded; nothing else was saved.";
+  }
+  return null;
+}
+
+export async function retryConsultationAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const requestedSessionId = String(formData.get("sessionId") ?? "");
+  const confirmedOverCap = formData.get("confirmedOverCap") === "on";
+
+  let result: SessionStartResult;
   try {
-    ({ sessionId } = extractAndStartSession(getAppDb(), {
-      projectName: name,
-      idea,
+    result = await retryStartSession(getAppDb(), {
+      sessionId: requestedSessionId,
       client: resolveModelClient(),
-    }));
+      confirmedOverCap,
+    });
   } catch (error) {
     const message = domainErrorMessage(error);
     if (message) {
@@ -81,7 +121,8 @@ export async function createConsultationAction(
     throw error;
   }
 
-  redirect(`/sessions/${sessionId}`);
+  revalidatePath(`/sessions/${result.sessionId}`);
+  return { error: startFailureMessage(result.failure) };
 }
 
 export async function reviewStatementAction(
@@ -159,12 +200,14 @@ export async function requestCoachingAction(
   formData: FormData,
 ): Promise<ActionState> {
   const questionId = String(formData.get("questionId") ?? "");
+  const confirmedOverCap = formData.get("confirmedOverCap") === "on";
 
   let sessionId: string;
   try {
-    ({ sessionId } = requestCoaching(getAppDb(), {
+    ({ sessionId } = await requestCoaching(getAppDb(), {
       questionId,
       client: resolveModelClient(),
+      confirmedOverCap,
     }));
   } catch (error) {
     const message = domainErrorMessage(error);

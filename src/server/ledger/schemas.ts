@@ -64,6 +64,17 @@ export const nextQuestionOutputSchema = z.object({
   whySelected: z.string().min(1),
 });
 
+// Both Fable tasks share one structured-output format (a stable output_config
+// is part of the prompt-cache key), so responses arrive in a discriminated
+// envelope. The payload is validated by the task-specific schema afterwards,
+// and a valid payload under the wrong task tag is rejected.
+export const fableTaskSchema = z.enum(["next_question", "coach"]);
+
+export const fableEnvelopeSchema = z.strictObject({
+  task: fableTaskSchema,
+  payload: z.unknown(),
+});
+
 export const proposeQuestionSchema = z.object({
   sessionId: z.string().min(1),
   body: z.string().min(1),
@@ -187,15 +198,69 @@ export const modelExecutionProvenanceSchema = z.enum([
   "live",
 ]);
 
-export const recordModelCallSchema = z.object({
+export const sessionInitializationStatusSchema = z.enum([
+  "starting",
+  "active",
+  "failed",
+]);
+
+// An attempt row is created 'pending' before network I/O and settled with one
+// of the other outcomes afterward; a paid call therefore always has a row.
+export const modelAttemptOutcomeSchema = z.enum([
+  "pending",
+  "succeeded",
+  "transport_failed",
+  "validation_failed",
+]);
+
+export const beginModelAttemptSchema = z.object({
   sessionId: z.string().min(1),
   modelAlias: modelAliasSchema,
   executionProvenance: modelExecutionProvenanceSchema,
-  estimatedCostCents: z.number().int().min(0),
-  inputTokens: z.number().int().min(0).optional(),
-  outputTokens: z.number().int().min(0).optional(),
+  estimatedCostMicrocents: z.number().int().min(0),
   confirmedOverCap: z.boolean().optional(),
+  apiModelId: z.string().min(1),
+  priceEffectiveDate: z.string().min(1),
 });
+
+// A transport failure never learned its real spend, so its actual cost stays
+// NULL and its estimate remains reserved; the other settled outcomes report
+// what the response actually cost.
+export const settleModelAttemptSchema = z
+  .object({
+    attemptId: z.string().min(1),
+    outcome: z.enum(["succeeded", "transport_failed", "validation_failed"]),
+    actualCostMicrocents: z.number().int().min(0).optional(),
+    latencyMs: z.number().int().min(0),
+    inputTokens: z.number().int().min(0).optional(),
+    outputTokens: z.number().int().min(0).optional(),
+    cacheReadTokens: z.number().int().min(0).optional(),
+    cacheWrite5mTokens: z.number().int().min(0).optional(),
+    cacheWrite1hTokens: z.number().int().min(0).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (
+      value.outcome === "transport_failed" &&
+      value.actualCostMicrocents !== undefined
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "A transport failure has unknown spend; omit actualCostMicrocents",
+        path: ["actualCostMicrocents"],
+      });
+    }
+    if (
+      value.outcome !== "transport_failed" &&
+      value.actualCostMicrocents === undefined
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Outcome ${value.outcome} requires actualCostMicrocents`,
+        path: ["actualCostMicrocents"],
+      });
+    }
+  });
 
 export type ProposeStatementInput = z.infer<typeof proposeStatementSchema>;
 export type ArtifactFilename = z.infer<typeof artifactFilenameSchema>;
@@ -205,13 +270,19 @@ export type CoachOutput = z.infer<typeof coachOutputSchema>;
 export type ProposeCoachNoteInput = z.infer<typeof proposeCoachNoteSchema>;
 export type EditStatementInput = z.infer<typeof editStatementSchema>;
 export type EditConcernInput = z.infer<typeof editConcernSchema>;
-export type RecordModelCallInput = z.infer<typeof recordModelCallSchema>;
+export type SessionInitializationStatus = z.infer<
+  typeof sessionInitializationStatusSchema
+>;
+export type ModelAttemptOutcome = z.infer<typeof modelAttemptOutcomeSchema>;
+export type BeginModelAttemptInput = z.infer<typeof beginModelAttemptSchema>;
+export type SettleModelAttemptInput = z.infer<typeof settleModelAttemptSchema>;
 export type ModelExecutionProvenance = z.infer<
   typeof modelExecutionProvenanceSchema
 >;
 export type ProposeConcernInput = z.infer<typeof proposeConcernSchema>;
 export type ExtractionOutput = z.infer<typeof extractionOutputSchema>;
 export type NextQuestionOutput = z.infer<typeof nextQuestionOutputSchema>;
+export type FableTask = z.infer<typeof fableTaskSchema>;
 export type ProposeQuestionInput = z.infer<typeof proposeQuestionSchema>;
 export type ResolveQuestionInput = z.infer<typeof resolveQuestionSchema>;
 export type QuestionDisposition = z.infer<typeof questionDispositionSchema>;
