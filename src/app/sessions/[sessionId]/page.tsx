@@ -1,10 +1,14 @@
 import { getAppDb } from "@/server/db/app-db";
 import { getSessionDetail } from "@/server/ledger/sessions";
 import { notFound } from "next/navigation";
+import { AskQuestionForm } from "./ask-question-form";
 import { CoachPromoteForm, CoachRequestForm } from "./coach-panel";
 import { GenerateExportForm } from "./exports-panel";
 import { MICROCENTS_PER_CENT } from "@/server/model/config";
+import { CORE_CODES, ONTOLOGY_ORDER } from "@/server/model/rubric";
+import { ConfirmFramingForm } from "./framing-form";
 import { RetryConsultationForm } from "./retry-form";
+import { DismissTensionForm, TensionStatementForm } from "./tension-forms";
 
 function dollars(microcents: number): string {
   return `$${(microcents / (100 * MICROCENTS_PER_CENT)).toFixed(4)}`;
@@ -155,6 +159,32 @@ export default async function SessionPage({
       </section>
 
       <section>
+        <h2 className="text-lg font-medium">Concern coverage checklist</h2>
+        <p className="mt-1 text-sm text-zinc-600">
+          The four core codes block &quot;first slice is framed&quot; while
+          they have no approved coverage. Absence in the ledger is the gap.
+        </p>
+        <ul className="mt-3 grid grid-cols-2 gap-1 text-sm">
+          {ONTOLOGY_ORDER.map((code) => {
+            const covered = detail.approvedConcerns.some(
+              (concern) => concern.code === code,
+            );
+            const core = CORE_CODES.includes(code);
+            return (
+              <li key={code} className={covered ? "text-zinc-700" : "text-zinc-500"}>
+                {covered ? "✓" : "✗"} {code}
+                {core && !covered ? (
+                  <span className="ml-1 text-xs font-medium text-red-800">
+                    blocking
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section>
         <h2 className="text-lg font-medium">Approved concern coverage</h2>
         {detail.approvedConcerns.length === 0 ? (
           <p className="mt-3 text-sm text-zinc-500">
@@ -176,7 +206,64 @@ export default async function SessionPage({
       </section>
 
       <section>
+        <h2 className="text-lg font-medium">Open tensions</h2>
+        <p className="mt-1 text-sm text-zinc-600">
+          Possible conflicts Fable surfaced between approved statements. They
+          never edit the ledger: dismiss a false alarm, or retract or revise a
+          cited statement — which resolves every tension citing it.
+        </p>
+        {detail.openTensions.length === 0 ? (
+          <p className="mt-3 text-sm text-zinc-500">
+            No open tensions.
+            {detail.closedTensionCount > 0
+              ? ` ${detail.closedTensionCount} closed tension${
+                  detail.closedTensionCount === 1 ? "" : "s"
+                } kept as provenance.`
+              : ""}
+          </p>
+        ) : (
+          <ul className="mt-4 flex flex-col gap-3">
+            {detail.openTensions.map((tension) => (
+              <li
+                key={tension.id}
+                className="rounded border border-amber-300 bg-amber-50 p-4"
+              >
+                <p className="text-sm font-medium text-amber-950">
+                  {tension.summary}
+                </p>
+                <ul className="mt-3 flex flex-col gap-3">
+                  {tension.citedStatements.map((statement) => (
+                    <li key={statement.id} className="text-sm text-zinc-700">
+                      <p className="text-xs uppercase tracking-wide text-zinc-500">
+                        Cited statement
+                      </p>
+                      <TensionStatementForm
+                        statementId={statement.id}
+                        body={statement.body}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                <DismissTensionForm contradictionId={tension.id} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
         <h2 className="text-lg font-medium">Next question</h2>
+        {!detail.pendingQuestion && detail.initializationStatus === "active" ? (
+          detail.proposedStatements.length > 0 ||
+          detail.proposedConcerns.length > 0 ? (
+            <p className="mt-3 text-sm text-zinc-500">
+              Review every proposed statement and concern above to unlock the
+              next question. It is chosen from your approved ledger state.
+            </p>
+          ) : (
+            <AskQuestionForm sessionId={detail.sessionId} />
+          )
+        ) : null}
         {detail.pendingQuestion ? (
           <div className="mt-3 rounded border border-zinc-200 p-4">
             <p>{detail.pendingQuestion.body}</p>
@@ -185,14 +272,78 @@ export default async function SessionPage({
               {detail.pendingQuestion.why_selected}
             </p>
             <p className="mt-2 text-xs uppercase tracking-wide text-zinc-500">
-              Provenance: {detail.pendingQuestion.provenance_source}
+              Question provenance: {detail.pendingQuestion.provenance_source}
             </p>
             <QuestionResolveForm questionId={detail.pendingQuestion.id} />
           </div>
-        ) : detail.resolvedQuestions.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">
-            No pending question.
-          </p>
+        ) : null}
+
+        {detail.pendingQuestion && detail.pendingCandidates.length > 0 ? (
+          <div className="mt-4">
+            <h3 className="text-sm font-medium">
+              Candidate ranking (claimed vs effective)
+            </h3>
+            <p className="mt-1 text-sm text-zinc-600">
+              Fable proposed these candidates with claimed scores; the rubric
+              recomputed core-gap and contradiction scores from the ledger and
+              asked its winner.
+              {detail.pendingCandidates.some(
+                (candidate) => candidate.model_rank !== candidate.rubric_rank,
+              )
+                ? " The rubric disagreed with the model's order."
+                : ""}
+            </p>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="text-zinc-500">
+                    <th className="pr-2 font-medium">Candidate</th>
+                    <th className="pr-2 font-medium">Concerns</th>
+                    <th className="pr-2 font-medium">Claimed g/s/c</th>
+                    <th className="pr-2 font-medium">Effective g/s/c</th>
+                    <th className="pr-2 font-medium">Total</th>
+                    <th className="pr-2 font-medium">Model rank</th>
+                    <th className="pr-2 font-medium">Rubric rank</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.pendingCandidates.map((candidate) => (
+                    <tr
+                      key={candidate.id}
+                      className={
+                        candidate.selected
+                          ? "font-medium text-zinc-900"
+                          : "text-zinc-600"
+                      }
+                    >
+                      <td className="pr-2">
+                        {candidate.selected ? "▶ " : ""}
+                        {candidate.body}
+                      </td>
+                      <td className="pr-2">
+                        {(JSON.parse(candidate.concern_codes) as string[]).join(
+                          ", ",
+                        )}
+                      </td>
+                      <td className="pr-2">
+                        {candidate.claimed_core_gap}/
+                        {candidate.claimed_slice_bounding}/
+                        {candidate.claimed_contradiction}
+                      </td>
+                      <td className="pr-2">
+                        {candidate.effective_core_gap}/
+                        {candidate.effective_slice_bounding}/
+                        {candidate.effective_contradiction}
+                      </td>
+                      <td className="pr-2">{candidate.effective_total}</td>
+                      <td className="pr-2">#{candidate.model_rank}</td>
+                      <td className="pr-2">#{candidate.rubric_rank}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : null}
 
         {detail.resolvedQuestions.length > 0 ? (
@@ -215,6 +366,51 @@ export default async function SessionPage({
               </li>
             ))}
           </ul>
+        ) : null}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-medium">First slice framing</h2>
+        <p className="mt-1 text-sm text-zinc-600">
+          A deterministic five-item checklist computed from the ledger decides
+          when framing can be confirmed. Fable&apos;s readiness advice never
+          satisfies an item; only your confirmation frames the slice, and
+          confirming does not stop the consultation.
+        </p>
+        <ul className="mt-3 flex flex-col gap-1 text-sm">
+          {detail.stopChecklist.items.map((item) => (
+            <li
+              key={item.key}
+              className={item.pass ? "text-zinc-700" : "text-zinc-500"}
+            >
+              {item.pass ? "✓" : "✗"} {item.label}
+              <span className="ml-1 text-xs text-zinc-500">
+                — {item.evidence}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {detail.framedAt ? (
+          <p className="mt-3 text-sm font-medium text-zinc-800">
+            First slice framed at {detail.framedAt}.
+          </p>
+        ) : null}
+        {detail.framedAt && !detail.stopChecklist.passes ? (
+          <p
+            role="status"
+            className="mt-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          >
+            The framing may be stale: the checklist no longer passes. The
+            failing items above list the current gaps.
+          </p>
+        ) : null}
+        {!detail.framedAt && detail.stopChecklist.passes ? (
+          <ConfirmFramingForm sessionId={detail.sessionId} />
+        ) : null}
+        {!detail.framedAt && !detail.stopChecklist.passes ? (
+          <p className="mt-3 text-sm text-zinc-500">
+            The ready offer appears when every item passes.
+          </p>
         ) : null}
       </section>
 

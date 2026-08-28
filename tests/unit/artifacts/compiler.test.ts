@@ -5,12 +5,18 @@ import {
   promoteCoachNote,
   proposeCoachNote,
 } from "../../../src/server/ledger/coach-notes";
-import { approveConcern, proposeConcern } from "../../../src/server/ledger/concerns";
+import {
+  approveConcern,
+  listConcerns,
+  proposeConcern,
+} from "../../../src/server/ledger/concerns";
+import { askAdaptiveQuestion } from "../../../src/server/model/next-question";
 import { createProject, createSession } from "../../../src/server/ledger/projects";
 import { getPendingQuestion, resolveQuestion } from "../../../src/server/ledger/questions";
 import {
   LedgerValidationError,
   approveStatement,
+  listStatements,
   proposeStatement,
   rejectStatement,
 } from "../../../src/server/ledger/statements";
@@ -151,6 +157,17 @@ describe("compileArtifacts", () => {
       idea: "one household inbox",
       client: createRecordedModelClient(),
     });
+    // Phase 2 start is extraction-only: clear review, then ask.
+    for (const row of listStatements(db, sessionId, "proposed")) {
+      approveStatement(db, row.id);
+    }
+    for (const row of listConcerns(db, sessionId, "proposed")) {
+      approveConcern(db, row.id);
+    }
+    await askAdaptiveQuestion(db, {
+      sessionId,
+      client: createRecordedModelClient(),
+    });
     const pending = getPendingQuestion(db, sessionId);
     if (!pending) {
       throw new Error("Expected a pending question");
@@ -161,8 +178,22 @@ describe("compileArtifacts", () => {
       body: "ANSWER-ONCE-MARKER",
     });
 
-    // The answer reaches exports only through its approved decision
-    // statement, so no file may render it twice (statement + answer row).
+    // Phase 2 promotion rule: the raw answer never reaches exports on its
+    // own — resolving no longer auto-approves a statement.
+    const beforeApproval = compileArtifacts(db, sessionId)
+      .map((file) => file.body)
+      .join("\n");
+    expect(beforeApproval).not.toContain("ANSWER-ONCE-MARKER");
+
+    // Only an approved (incremental) proposal carries it in — exactly once.
+    const proposal = proposeStatement(db, {
+      sessionId,
+      kind: "decision",
+      body: "ANSWER-ONCE-MARKER distilled into a decision.",
+      provenanceSource: "model-inference",
+    });
+    approveStatement(db, proposal.id);
+
     const files = compileArtifacts(db, sessionId);
     const containing = files.filter((file) =>
       file.body.includes("ANSWER-ONCE-MARKER"),

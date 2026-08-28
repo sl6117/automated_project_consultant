@@ -27,6 +27,14 @@ export type ModelClient = {
     projectName: string;
     request: ModelRequestDescription;
   }): Promise<ModelClientResult>;
+  incrementalExtraction(input: {
+    idea: string;
+    projectName: string;
+    questionBody: string;
+    answerBody: string;
+    disposition: string;
+    request: ModelRequestDescription;
+  }): Promise<ModelClientResult>;
   coachRecommendation(input: {
     idea: string;
     projectName: string;

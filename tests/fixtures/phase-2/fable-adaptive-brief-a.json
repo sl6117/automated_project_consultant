@@ -1,0 +1,34 @@
+{
+  "task": "next_question",
+  "payload": {
+    "candidates": [
+      {
+        "body": "How much task history should the inbox retain?",
+        "whySelected": "Retention feels like the most pressing open choice.",
+        "concernCodes": ["data"],
+        "claimedScores": {
+          "coreGap": 3,
+          "sliceBounding": 3,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      },
+      {
+        "body": "Who operates the inbox day to day?",
+        "whySelected": "Names the missing operator behind the workflow.",
+        "concernCodes": ["user"],
+        "claimedScores": {
+          "coreGap": 1,
+          "sliceBounding": 2,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      }
+    ],
+    "contradictions": [],
+    "readyAdvice": {
+      "ready": false,
+      "why": "User and workflow coverage are still missing."
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # AI Engineering Learning Roadmap
 
-Status: Phase 1 complete; Phase 2 (adaptive question selection and stopping) is next.
+Status: Phase 2 complete; Phase 3 (evaluation before delegation) is next.
 
 This roadmap tracks what the owner should learn while building the product. It
 is separate from phase specifications, which define product behavior and

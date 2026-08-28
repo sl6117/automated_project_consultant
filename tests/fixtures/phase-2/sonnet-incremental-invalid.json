@@ -1,0 +1,9 @@
+{
+  "statements": [
+    {
+      "kind": "verdict",
+      "body": "An unknown statement kind must reject the whole payload."
+    }
+  ],
+  "concerns": []
+}

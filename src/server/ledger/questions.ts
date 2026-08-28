@@ -6,14 +6,8 @@ import {
   resolveQuestionSchema,
   type ProposeQuestionInput,
   type QuestionDisposition,
-  type StatementKind,
 } from "./schemas";
-import {
-  LedgerValidationError,
-  approveStatement,
-  proposeStatement,
-  type StatementRow,
-} from "./statements";
+import { LedgerValidationError } from "./statements";
 
 export type QuestionRow = {
   id: string;
@@ -38,18 +32,6 @@ export type AnswerRow = {
 export type QuestionWithAnswer = QuestionRow & {
   answer: AnswerRow | null;
 };
-
-function statementKindForDisposition(
-  disposition: QuestionDisposition,
-): StatementKind {
-  if (disposition === "unknown") {
-    return "unknown";
-  }
-  if (disposition === "deferred") {
-    return "deferred";
-  }
-  return "decision";
-}
 
 function resolvedAnswerBody(
   question: QuestionRow,
@@ -161,6 +143,10 @@ function getAnswerForQuestion(
   return row ?? null;
 }
 
+// Phase 2 promotion rule: resolving a question stores the answer and does NOT
+// auto-approve a statement. The answer is user truth but conversational text,
+// not a typed self-contained claim — Sonnet's incremental extraction proposes
+// typed statements from it, and only user review approves them.
 export function resolveQuestion(
   db: Database.Database,
   input: {
@@ -168,7 +154,7 @@ export function resolveQuestion(
     disposition: string;
     body: string;
   },
-): { question: QuestionRow; answer: AnswerRow; statement: StatementRow } {
+): { question: QuestionRow; answer: AnswerRow } {
   const parsed = resolveQuestionSchema.safeParse(input);
   if (!parsed.success) {
     throw new LedgerValidationError(parsed.error.message);
@@ -200,14 +186,6 @@ export function resolveQuestion(
       question.id,
     );
 
-    const proposed = proposeStatement(db, {
-      sessionId: question.session_id,
-      kind: statementKindForDisposition(parsed.data.disposition),
-      body: answerBody,
-      provenanceSource: "user",
-    });
-    const statement = approveStatement(db, proposed.id);
-
     const answer = db
       .prepare("SELECT * FROM answers WHERE id = ?")
       .get(answerId) as AnswerRow;
@@ -215,7 +193,6 @@ export function resolveQuestion(
     return {
       question: getQuestion(db, question.id),
       answer,
-      statement,
     };
   });
 

@@ -1,0 +1,45 @@
+{
+  "task": "next_question",
+  "payload": {
+    "candidates": [
+      {
+        "body": "Should triage happen at a fixed time each day?",
+        "whySelected": "Pins the daily rhythm down early.",
+        "concernCodes": ["workflow"],
+        "claimedScores": {
+          "coreGap": 0,
+          "sliceBounding": 2,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      },
+      {
+        "body": "What single pain must the first slice remove completely?",
+        "whySelected": "The sharpest bound on the first slice.",
+        "concernCodes": ["problem"],
+        "claimedScores": {
+          "coreGap": 0,
+          "sliceBounding": 3,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      },
+      {
+        "body": "Does anyone besides the operator ever read the inbox?",
+        "whySelected": "Bounds who the slice must serve.",
+        "concernCodes": ["user"],
+        "claimedScores": {
+          "coreGap": 0,
+          "sliceBounding": 2,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      }
+    ],
+    "contradictions": [],
+    "readyAdvice": {
+      "ready": false,
+      "why": "Coverage exists but the slice bound is still loose."
+    }
+  }
+}

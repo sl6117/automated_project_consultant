@@ -14,7 +14,16 @@ import {
   editConcern,
   rejectConcern,
 } from "@/server/ledger/concerns";
+import {
+  dismissContradiction,
+  retractCitedStatement,
+  reviseCitedStatement,
+} from "@/server/ledger/contradictions";
 import { CostCapError } from "@/server/ledger/cost";
+import {
+  FramingNotReadyError,
+  confirmFraming,
+} from "@/server/ledger/framing";
 import { ModelTransportError } from "@/server/model/attempt-runner";
 import { CoachValidationError, requestCoaching } from "@/server/model/coach";
 import { resolveQuestion } from "@/server/ledger/questions";
@@ -30,8 +39,17 @@ import {
   retryStartSession,
   type SessionStartResult,
 } from "@/server/model/extract";
+import {
+  IncrementalExtractionValidationError,
+  proposeFromAnswer,
+} from "@/server/model/incremental";
 import { resolveModelClient } from "@/server/model/mode";
-import { NextQuestionValidationError } from "@/server/model/next-question";
+import {
+  ConsultationNotReadyError,
+  NextQuestionValidationError,
+  StaleConsultationError,
+  askAdaptiveQuestion,
+} from "@/server/model/next-question";
 
 export type ActionState = { error: string | null };
 
@@ -49,8 +67,17 @@ function domainErrorMessage(error: unknown): string | null {
   ) {
     return "The model returned output that failed validation. Nothing was saved.";
   }
+  if (error instanceof ConsultationNotReadyError) {
+    return "Review every proposed statement and concern, and resolve the pending question, before asking the next one.";
+  }
   if (error instanceof ModelTransportError) {
     return "The model call could not complete. Recorded spend was kept; nothing else was saved. Retry when ready.";
+  }
+  if (error instanceof FramingNotReadyError) {
+    return "The stop checklist no longer passes, so framing cannot be confirmed. Resolve the listed gaps first.";
+  }
+  if (error instanceof StaleConsultationError) {
+    return "The consultation changed while the model call was running, so nothing from that call was saved. The spend was recorded; ask again from the current state.";
   }
   if (error instanceof ExportNotReadyError) {
     return "Approve at least one statement before generating an export.";
@@ -269,6 +296,110 @@ export async function generateArtifactsAction(
   return { error: null };
 }
 
+export async function askQuestionAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const requestedSessionId = String(formData.get("sessionId") ?? "");
+  const confirmedOverCap = formData.get("confirmedOverCap") === "on";
+
+  try {
+    // A null question is not an error: the stop checklist passed after this
+    // payload's contradictions persisted, so the page shows the ready offer
+    // instead of a new pending question.
+    await askAdaptiveQuestion(getAppDb(), {
+      sessionId: requestedSessionId,
+      client: resolveModelClient(),
+      confirmedOverCap,
+    });
+  } catch (error) {
+    const message = domainErrorMessage(error);
+    if (message) {
+      return { error: message };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/sessions/${requestedSessionId}`);
+  return { error: null };
+}
+
+export async function dismissTensionAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const contradictionId = String(formData.get("contradictionId") ?? "");
+
+  let sessionId: string;
+  try {
+    sessionId = dismissContradiction(getAppDb(), contradictionId).session_id;
+  } catch (error) {
+    const message = domainErrorMessage(error);
+    if (message) {
+      return { error: message };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/sessions/${sessionId}`);
+  return { error: null };
+}
+
+export async function tensionStatementAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const statementId = String(formData.get("statementId") ?? "");
+  const intent = String(formData.get("intent") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+
+  const db = getAppDb();
+  let sessionId: string;
+  try {
+    if (intent === "retract") {
+      sessionId = retractCitedStatement(db, statementId).statement.session_id;
+    } else if (intent === "revise") {
+      if (!body) {
+        return { error: "Type the revised statement before saving it." };
+      }
+      sessionId = reviseCitedStatement(db, { statementId, body }).revised
+        .session_id;
+    } else {
+      throw new Error(`Unsupported tension statement intent: ${intent}`);
+    }
+  } catch (error) {
+    const message = domainErrorMessage(error);
+    if (message) {
+      return { error: message };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/sessions/${sessionId}`);
+  return { error: null };
+}
+
+export async function confirmFramingAction(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const requestedSessionId = String(formData.get("sessionId") ?? "");
+
+  let sessionId: string;
+  try {
+    ({ sessionId } = confirmFraming(getAppDb(), requestedSessionId));
+  } catch (error) {
+    const message = domainErrorMessage(error);
+    if (message) {
+      return { error: message };
+    }
+    throw error;
+  }
+
+  revalidatePath(`/sessions/${sessionId}`);
+  return { error: null };
+}
+
 export async function resolveQuestionAction(
   _prevState: ActionState,
   formData: FormData,
@@ -284,9 +415,10 @@ export async function resolveQuestionAction(
     };
   }
 
+  const db = getAppDb();
   let sessionId: string;
   try {
-    const resolved = resolveQuestion(getAppDb(), {
+    const resolved = resolveQuestion(db, {
       questionId,
       disposition,
       body,
@@ -296,6 +428,31 @@ export async function resolveQuestionAction(
     const message = domainErrorMessage(error);
     if (message) {
       return { error: message };
+    }
+    throw error;
+  }
+
+  // The answer is stored; the incremental Sonnet pass runs afterward and its
+  // failure never un-records the answer.
+  try {
+    await proposeFromAnswer(db, {
+      questionId,
+      client: resolveModelClient(),
+      confirmedOverCap: formData.get("confirmedOverCap") === "on",
+    });
+  } catch (error) {
+    revalidatePath(`/sessions/${sessionId}`);
+    if (error instanceof IncrementalExtractionValidationError) {
+      return {
+        error:
+          "Your answer was recorded, but the model's follow-up proposals failed validation and were discarded.",
+      };
+    }
+    const message = domainErrorMessage(error);
+    if (message) {
+      return {
+        error: `Your answer was recorded. Follow-up proposals did not: ${message}`,
+      };
     }
     throw error;
   }

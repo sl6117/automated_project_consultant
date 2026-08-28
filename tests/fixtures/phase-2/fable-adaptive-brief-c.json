@@ -1,0 +1,42 @@
+{
+  "task": "next_question",
+  "payload": {
+    "candidates": [
+      {
+        "body": "Which integrations should the first slice postpone?",
+        "whySelected": "A tight non-goal list bounds the slice hard.",
+        "concernCodes": ["data"],
+        "claimedScores": {
+          "coreGap": 0,
+          "sliceBounding": 3,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      },
+      {
+        "body": "Which statement should give way on capture reliability?",
+        "whySelected": "Directly resolves the cited tension.",
+        "concernCodes": ["data"],
+        "claimedScores": {
+          "coreGap": 0,
+          "sliceBounding": 1,
+          "contradictionResolution": 3
+        },
+        "targetsContradictionIndexes": [0]
+      }
+    ],
+    "contradictions": [
+      {
+        "summary": "One approved statement builds on reliable capture while another still records capture reliability as untested.",
+        "citedStatementIds": [
+          "__APPROVED_STATEMENT_0__",
+          "__APPROVED_STATEMENT_1__"
+        ]
+      }
+    ],
+    "readyAdvice": {
+      "ready": false,
+      "why": "An open tension blocks readiness regardless of coverage."
+    }
+  }
+}

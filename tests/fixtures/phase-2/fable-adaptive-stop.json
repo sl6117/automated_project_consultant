@@ -1,0 +1,23 @@
+{
+  "task": "next_question",
+  "payload": {
+    "candidates": [
+      {
+        "body": "Which single capture surface should the first slice support?",
+        "whySelected": "Bounding capture keeps the first slice small even though the seed looks ready.",
+        "concernCodes": ["workflow"],
+        "claimedScores": {
+          "coreGap": 0,
+          "sliceBounding": 3,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      }
+    ],
+    "contradictions": [],
+    "readyAdvice": {
+      "ready": true,
+      "why": "Core coverage, an approved decision, and no open tensions remain."
+    }
+  }
+}

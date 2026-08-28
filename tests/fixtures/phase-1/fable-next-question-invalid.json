@@ -1,7 +1,23 @@
 {
   "task": "next_question",
   "payload": {
-    "body": "",
-    "whySelected": "An empty question body must be rejected."
+    "candidates": [
+      {
+        "body": "",
+        "whySelected": "An empty question body must be rejected.",
+        "concernCodes": ["workflow"],
+        "claimedScores": {
+          "coreGap": 1,
+          "sliceBounding": 1,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      }
+    ],
+    "contradictions": [],
+    "readyAdvice": {
+      "ready": false,
+      "why": "Invalid payload fixture."
+    }
   }
 }

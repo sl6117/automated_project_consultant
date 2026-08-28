@@ -56,7 +56,7 @@ describe("question ledger", () => {
     expect(listQuestions(db, sessionId)).toHaveLength(1);
   });
 
-  test("recording an answer writes user provenance and an approved decision", () => {
+  test("recording an answer stores user provenance and approves nothing", () => {
     const { db, sessionId } = seedSession();
     const question = proposeQuestion(db, {
       sessionId,
@@ -74,16 +74,13 @@ describe("question ledger", () => {
     expect(resolved.question.status).toBe("answered");
     expect(resolved.answer.disposition).toBe("answered");
     expect(resolved.answer.provenance_source).toBe("user");
-    expect(resolved.statement.kind).toBe("decision");
-    expect(resolved.statement.status).toBe("approved");
-    expect(resolved.statement.provenance_source).toBe("user");
     expect(getPendingQuestion(db, sessionId)).toBeNull();
-    expect(listStatements(db, sessionId, "approved")).toEqual([
-      resolved.statement,
-    ]);
+    // Phase 2 promotion rule: no statement is auto-approved — or even
+    // proposed — by resolving. Sonnet's incremental pass proposes instead.
+    expect(listStatements(db, sessionId)).toHaveLength(0);
   });
 
-  test("mark unknown and deferred write those statement kinds", () => {
+  test("mark unknown and deferred store dispositions without statements", () => {
     const first = seedSession();
     const unknownQuestion = proposeQuestion(first.db, {
       sessionId: first.sessionId,
@@ -96,9 +93,9 @@ describe("question ledger", () => {
       disposition: "unknown",
       body: "",
     });
-    expect(unknown.statement.kind).toBe("unknown");
     expect(unknown.answer.disposition).toBe("unknown");
     expect(unknown.answer.body).toContain("Who is the operator?");
+    expect(listStatements(first.db, first.sessionId)).toHaveLength(0);
 
     const second = seedSession();
     const deferredQuestion = proposeQuestion(second.db, {
@@ -112,9 +109,9 @@ describe("question ledger", () => {
       disposition: "deferred",
       body: "Decide after watching a week of mail.",
     });
-    expect(deferred.statement.kind).toBe("deferred");
     expect(deferred.answer.disposition).toBe("deferred");
     expect(deferred.answer.body).toBe("Decide after watching a week of mail.");
+    expect(listStatements(second.db, second.sessionId)).toHaveLength(0);
   });
 
   test("rejects an empty answered body and leaves the question pending", () => {

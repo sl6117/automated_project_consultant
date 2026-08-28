@@ -1,7 +1,42 @@
 {
   "task": "next_question",
   "payload": {
-    "body": "Who captures incoming household tasks today, and where do they pile up?",
-    "whySelected": "The extraction restates the inbox idea but does not name an operator or capture surface. That choice bounds workflow and data before any other slice."
+    "candidates": [
+      {
+        "body": "Should the inbox support shared family accounts later?",
+        "whySelected": "Scoping future sharing keeps the first slice small.",
+        "concernCodes": ["non-goals"],
+        "claimedScores": {
+          "coreGap": 2,
+          "sliceBounding": 3,
+          "contradictionResolution": 0
+        },
+        "targetsContradictionIndexes": []
+      },
+      {
+        "body": "Who captures incoming household tasks today, and where do they pile up?",
+        "whySelected": "The extraction restates the inbox idea but does not name an operator or capture surface. That choice bounds workflow and data before any other slice.",
+        "claimedScores": {
+          "coreGap": 1,
+          "sliceBounding": 2,
+          "contradictionResolution": 0
+        },
+        "concernCodes": ["workflow", "user"],
+        "targetsContradictionIndexes": []
+      }
+    ],
+    "contradictions": [
+      {
+        "summary": "The inbox is treated as the settled foundation for daily triage while capture reliability is still recorded as an untested hypothesis.",
+        "citedStatementIds": [
+          "__APPROVED_STATEMENT_0__",
+          "__APPROVED_STATEMENT_1__"
+        ]
+      }
+    ],
+    "readyAdvice": {
+      "ready": false,
+      "why": "Workflow, problem, and success coverage are still missing."
+    }
   }
 }

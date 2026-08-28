@@ -59,6 +59,9 @@ export function createLiveModelClient(
     nextQuestion(input) {
       return call(input.request);
     },
+    incrementalExtraction(input) {
+      return call(input.request);
+    },
     coachRecommendation(input) {
       return call(input.request);
     },

@@ -10,15 +10,7 @@ import {
 import { LedgerValidationError, proposeStatement } from "../ledger/statements";
 import { ModelTransportError, runModelAttempt } from "./attempt-runner";
 import type { ModelClient } from "./client";
-import {
-  describeExtractionRequest,
-  describeNextQuestionRequest,
-} from "./prompt";
-import {
-  NextQuestionValidationError,
-  insertQuestionContent,
-  parseNextQuestion,
-} from "./next-question";
+import { describeExtractionRequest } from "./prompt";
 
 export class ExtractionValidationError extends Error {
   constructor(message: string) {
@@ -32,7 +24,6 @@ export type SessionStartResult = {
   initializationStatus: SessionInitializationStatus;
   failure:
     | "extraction-validation"
-    | "question-validation"
     | "content-ledger"
     | "transport"
     | "cost-cap"
@@ -144,19 +135,26 @@ async function runStartAttempts(
   const semantic = { projectName: input.projectName, idea: input.idea };
 
   try {
-    const extraction = await runModelAttempt(mkAttempt("sonnet"));
-    const question = await runModelAttempt(mkAttempt("fable"));
+    // Session start is Sonnet extraction only. The first Fable question is
+    // deferred until extraction review is clear, so the adaptive path can
+    // rank against approved rows with ids.
+    const request = describeExtractionRequest(semantic);
+    const extraction = await runModelAttempt({
+      db,
+      sessionId: input.sessionId,
+      alias: "sonnet",
+      executionProvenance: input.client.executionProvenance,
+      request,
+      confirmedOverCap: input.confirmedOverCap,
+      invoke: () => input.client.extractFromIdea({ ...semantic, request }),
+      parse: parseExtraction,
+    });
 
     const commit = db.transaction(() => {
       insertExtractionContent(db, {
         sessionId: input.sessionId,
         extraction: extraction.value as ExtractionOutput,
         modelCallId: extraction.attempt.id,
-      });
-      insertQuestionContent(db, {
-        sessionId: input.sessionId,
-        question: (question.value as ReturnType<typeof parseNextQuestion>),
-        modelCallId: question.attempt.id,
       });
       db.prepare(
         "UPDATE discovery_sessions SET initialization_status = 'active' WHERE id = ?",
@@ -183,31 +181,6 @@ async function runStartAttempts(
       failure,
     };
   }
-
-  // One request description per attempt: the estimate and the client call
-  // both consume the same object.
-  function mkAttempt(alias: "sonnet" | "fable") {
-    const request =
-      alias === "sonnet"
-        ? describeExtractionRequest(semantic)
-        : describeNextQuestionRequest(semantic);
-    const call =
-      alias === "sonnet"
-        ? () => input.client.extractFromIdea({ ...semantic, request })
-        : () => input.client.nextQuestion({ ...semantic, request });
-    const parse =
-      alias === "sonnet" ? parseExtraction : parseNextQuestion;
-    return {
-      db,
-      sessionId: input.sessionId,
-      alias,
-      executionProvenance: input.client.executionProvenance,
-      request,
-      confirmedOverCap: input.confirmedOverCap,
-      invoke: call,
-      parse: parse as (payload: unknown) => unknown,
-    };
-  }
 }
 
 function classifyStartFailure(
@@ -215,9 +188,6 @@ function classifyStartFailure(
 ): SessionStartResult["failure"] {
   if (error instanceof ExtractionValidationError) {
     return "extraction-validation";
-  }
-  if (error instanceof NextQuestionValidationError) {
-    return "question-validation";
   }
   if (error instanceof ModelTransportError) {
     return "transport";

@@ -1,6 +1,7 @@
 import { describe, expect, test, vi, beforeEach } from "vitest";
 import { openMemoryLedger } from "../../../src/server/db/open";
 import { describeNextQuestionRequest } from "../../../src/server/model/prompt";
+import { emptyAdaptiveContext } from "../helpers/adaptive-context";
 
 vi.mock("../../../src/server/ledger/model-attempts", () => ({
   beginModelAttempt: vi.fn(),
@@ -33,7 +34,12 @@ function runInput(overrides: {
     sessionId: "s1",
     alias: "fable" as const,
     executionProvenance: "recorded" as const,
-    request: describeNextQuestionRequest({ idea: "x", projectName: "y" }),
+    request: describeNextQuestionRequest({
+      idea: "x",
+      projectName: "y",
+      approved: { statements: [], concerns: [] },
+      context: emptyAdaptiveContext(),
+    }),
     invoke:
       overrides.invoke ?? (async () => ({ payload: { ok: true }, usage: null })),
     parse: overrides.parse ?? ((payload: unknown) => payload),

@@ -1,0 +1,22 @@
+{
+  "statements": [
+    {
+      "kind": "decision",
+      "body": "Tasks are captured into one shared inbox and triaged daily."
+    }
+  ],
+  "concerns": [
+    {
+      "code": "workflow",
+      "coverage": "Capture happens in one shared inbox with a daily triage pass."
+    },
+    {
+      "code": "problem",
+      "coverage": "Household tasks currently scatter across surfaces and get lost before triage."
+    },
+    {
+      "code": "success",
+      "coverage": "A week where no captured task is lost before its daily triage."
+    }
+  ]
+}

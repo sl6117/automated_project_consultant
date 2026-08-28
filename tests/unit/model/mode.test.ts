@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { extractionOutputSchema } from "../../../src/server/ledger/schemas";
 import { resolveModelClient } from "../../../src/server/model/mode";
-import { parseNextQuestion } from "../../../src/server/model/next-question";
+import { parseAdaptiveNextQuestion } from "../../../src/server/model/next-question";
 import {
   describeExtractionRequest,
   describeNextQuestionRequest,
 } from "../../../src/server/model/prompt";
+import { emptyAdaptiveContext } from "../helpers/adaptive-context";
 
 const savedMode = process.env.CONSULTANT_MODEL_MODE;
 const savedKey = process.env.ANTHROPIC_API_KEY;
@@ -34,10 +35,14 @@ describe("resolveModelClient", () => {
       request: describeNextQuestionRequest({
         idea: "an idea",
         projectName: "Zed",
+        approved: { statements: [], concerns: [] },
+        context: emptyAdaptiveContext(),
       }),
     });
-    const question = parseNextQuestion(result.payload);
-    expect(question.body).toContain("Zed");
+    const payload = parseAdaptiveNextQuestion(result.payload, {
+      approvedStatementIds: new Set(),
+    });
+    expect(payload.candidates[0]?.body).toContain("Zed");
     expect(result.usage).toBeNull();
     expect(client.executionProvenance).toBe("synthetic");
   });

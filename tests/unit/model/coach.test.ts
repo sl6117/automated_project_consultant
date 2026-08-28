@@ -3,13 +3,15 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { openMemoryLedger } from "../../../src/server/db/open";
 import { listCoachNotes } from "../../../src/server/ledger/coach-notes";
-import { approveConcern } from "../../../src/server/ledger/concerns";
+import { approveConcern, listConcerns } from "../../../src/server/ledger/concerns";
 import { CostCapError } from "../../../src/server/ledger/cost";
 import { getPendingQuestion } from "../../../src/server/ledger/questions";
 import {
   LedgerValidationError,
   approveStatement,
+  listStatements,
 } from "../../../src/server/ledger/statements";
+import { askAdaptiveQuestion } from "../../../src/server/model/next-question";
 import type { ModelClient } from "../../../src/server/model/client";
 import {
   CoachValidationError,
@@ -47,6 +49,9 @@ function coachClient(
     async nextQuestion() {
       throw new Error("not used");
     },
+    async incrementalExtraction() {
+      throw new Error("not used");
+    },
     async coachRecommendation(input) {
       if (capture) {
         capture.input = input;
@@ -56,15 +61,27 @@ function coachClient(
   };
 }
 
+// Phase 2 start is extraction-only, so reaching a pending question means
+// clearing review and asking the adaptive question explicitly.
 async function startActiveSession(db: ReturnType<typeof openMemoryLedger>) {
   const result = await extractAndStartSession(db, {
     projectName: "Life Admin Inbox",
     idea: "A box for household tasks",
     client: createRecordedModelClient(),
   });
+  for (const row of listStatements(db, result.sessionId, "proposed")) {
+    approveStatement(db, row.id);
+  }
+  for (const row of listConcerns(db, result.sessionId, "proposed")) {
+    approveConcern(db, row.id);
+  }
+  await askAdaptiveQuestion(db, {
+    sessionId: result.sessionId,
+    client: createRecordedModelClient(),
+  });
   const question = getPendingQuestion(db, result.sessionId);
   if (!question) {
-    throw new Error("Expected a pending question after session start");
+    throw new Error("Expected a pending question after the adaptive ask");
   }
   return { sessionId: result.sessionId, question };
 }
@@ -198,9 +215,16 @@ describe("requestCoaching", () => {
       idea: "ramen restaurant inventory and budget manager",
       client,
     });
+    for (const row of listStatements(db, result.sessionId, "proposed")) {
+      approveStatement(db, row.id);
+    }
+    for (const row of listConcerns(db, result.sessionId, "proposed")) {
+      approveConcern(db, row.id);
+    }
+    await askAdaptiveQuestion(db, { sessionId: result.sessionId, client });
     const question = getPendingQuestion(db, result.sessionId);
     if (!question) {
-      throw new Error("Expected a pending question after session start");
+      throw new Error("Expected a pending question after the adaptive ask");
     }
 
     const { note } = await requestCoaching(db, {
@@ -220,18 +244,7 @@ describe("requestCoaching", () => {
   test("coaching sends approved statements and concerns as context", async () => {
     const db = openMemoryLedger();
     const { sessionId, question } = await startActiveSession(db);
-    const proposed = db
-      .prepare(
-        "SELECT id FROM statements WHERE session_id = ? AND status = 'proposed' ORDER BY created_at LIMIT 1",
-      )
-      .get(sessionId) as { id: string };
-    approveStatement(db, proposed.id);
-    const proposedConcern = db
-      .prepare(
-        "SELECT id FROM concerns WHERE session_id = ? AND status = 'proposed' ORDER BY created_at LIMIT 1",
-      )
-      .get(sessionId) as { id: string };
-    approveConcern(db, proposedConcern.id);
+    void sessionId;
 
     const capture: { input?: unknown } = {};
     await requestCoaching(db, {
@@ -239,6 +252,7 @@ describe("requestCoaching", () => {
       client: coachClient(coachEnvelope(coachFixturePayload()), capture),
     });
 
+    // startActiveSession approved the full fixture extraction.
     const input = capture.input as {
       questionBody: string;
       approvedStatements: string[];
@@ -247,9 +261,11 @@ describe("requestCoaching", () => {
     expect(input.questionBody).toContain("Who captures");
     expect(input.approvedStatements).toStrictEqual([
       "The user wants a household life-admin inbox for incoming tasks.",
+      "Triage once per day is enough if capture is reliable.",
     ]);
     expect(input.approvedConcerns).toStrictEqual([
       "user: A single household operator capturing tasks from email and chat.",
+      "non-goals: Not a shared family social network.",
     ]);
   });
 

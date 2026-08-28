@@ -1,8 +1,8 @@
 import type { ModelClient } from "./client";
 import type {
+  AdaptiveNextQuestionOutput,
   CoachOutput,
   ExtractionOutput,
-  NextQuestionOutput,
 } from "../ledger/schemas";
 
 export function stubExtractionFromIdea(input: {
@@ -32,10 +32,26 @@ export function stubExtractionFromIdea(input: {
 export function stubNextQuestionFromIdea(input: {
   idea: string;
   projectName: string;
-}): NextQuestionOutput {
+}): AdaptiveNextQuestionOutput {
   return {
-    body: `What must the first working version of "${input.projectName}" do that you cannot do today?`,
-    whySelected: `The idea is still a restatement of "${input.idea}". A first-slice behavior bounds the rest of discovery.`,
+    candidates: [
+      {
+        body: `What must the first working version of "${input.projectName}" do that you cannot do today?`,
+        whySelected: `The idea is still a restatement of "${input.idea}". A first-slice behavior bounds the rest of discovery.`,
+        concernCodes: ["workflow"],
+        claimedScores: {
+          coreGap: 3,
+          sliceBounding: 2,
+          contradictionResolution: 0,
+        },
+        targetsContradictionIndexes: [],
+      },
+    ],
+    contradictions: [],
+    readyAdvice: {
+      ready: false,
+      why: "A synthetic placeholder cannot judge readiness.",
+    },
   };
 }
 
@@ -64,6 +80,18 @@ export function createStubModelClient(): ModelClient {
     executionProvenance: "synthetic",
     async extractFromIdea(input) {
       return { payload: stubExtractionFromIdea(input), usage: null };
+    },
+    async incrementalExtraction(input) {
+      // Deterministic distillation of the answer into one typed proposal.
+      return {
+        payload: {
+          statements: [
+            { kind: "decision", body: `Decided: ${input.answerBody}` },
+          ],
+          concerns: [],
+        },
+        usage: null,
+      };
     },
     async nextQuestion(input) {
       // Fable responses arrive in the shared discriminated envelope.

@@ -120,6 +120,65 @@ describe("migration 006_artifact_sets", () => {
   });
 });
 
+describe("migration 008_question_candidates", () => {
+  test("adds the candidates table additively with clean foreign keys", () => {
+    const db = openLedgerBeforeMigration(8);
+    db.prepare(
+      "INSERT INTO projects (id, name, idea, created_at) VALUES ('p1', 'Linked', 'idea', 't0')",
+    ).run();
+    db.prepare(
+      `INSERT INTO discovery_sessions (
+        id, project_id, estimated_cost_cents, cap_cents, created_at
+      ) VALUES ('s1', 'p1', 0, 500, 't0')`,
+    ).run();
+
+    applyMigration(db, "008_question_candidates.sql");
+
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toStrictEqual([]);
+    expect(columnNames(db, "question_candidates")).toContain("effective_total");
+    expect(columnNames(db, "question_candidates")).toContain("rubric_rank");
+  });
+});
+
+describe("migration 009_contradictions", () => {
+  test("adds the contradictions table and framed_at additively", () => {
+    const db = openLedgerBeforeMigration(9);
+    db.prepare(
+      "INSERT INTO projects (id, name, idea, created_at) VALUES ('p1', 'Linked', 'idea', 't0')",
+    ).run();
+    db.prepare(
+      `INSERT INTO discovery_sessions (
+        id, project_id, estimated_cost_cents, cap_cents, created_at
+      ) VALUES ('s1', 'p1', 0, 500, 't0')`,
+    ).run();
+
+    applyMigration(db, "009_contradictions.sql");
+
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toStrictEqual([]);
+    const columns = columnNames(db, "contradictions");
+    expect(columns).toContain("cited_statement_ids");
+    expect(columns).toContain("closed_at");
+    // Existing sessions load with a null framed_at, never a fabricated one.
+    expect(columnNames(db, "discovery_sessions")).toContain("framed_at");
+    const session = db
+      .prepare("SELECT framed_at FROM discovery_sessions WHERE id = 's1'")
+      .get() as { framed_at: string | null };
+    expect(session.framed_at).toBeNull();
+
+    // The status CHECK rejects anything outside the three-state lifecycle.
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO contradictions (
+            id, session_id, model_call_id, summary, cited_statement_ids,
+            status, created_at, closed_at
+          ) VALUES ('c1', 's1', NULL, 'tension', '[]', 'superseded', 't1', NULL)`,
+        )
+        .run(),
+    ).toThrow(/CHECK/);
+  });
+});
+
 describe("migration 007_live_model_attempts", () => {
   test("is additive: linked rows keep their ids and foreign keys stay clean", () => {
     const db = openLedgerBeforeMigration(7);

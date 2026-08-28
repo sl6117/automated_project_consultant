@@ -42,26 +42,63 @@ export const proposeConcernSchema = z.object({
   modelCallId: z.string().min(1).optional(),
 });
 
-export const extractionOutputSchema = z.object({
-  statements: z
-    .array(
-      z.object({
-        kind: statementKindSchema,
-        body: z.string().min(1),
-      }),
-    )
-    .min(1),
-  concerns: z.array(
-    z.object({
-      code: concernCodeSchema,
-      coverage: z.string().min(1),
-    }),
-  ),
+// Both extraction payloads are strict at every level: unknown fields are a
+// contract violation, not padding to drop silently — the Zod gate is the
+// only validation for recorded and synthetic clients, where the live API's
+// additionalProperties: false never runs.
+const extractionStatementItemSchema = z.strictObject({
+  kind: statementKindSchema,
+  body: z.string().min(1),
 });
 
-export const nextQuestionOutputSchema = z.object({
+const extractionConcernItemSchema = z.strictObject({
+  code: concernCodeSchema,
+  coverage: z.string().min(1),
+});
+
+export const extractionOutputSchema = z.strictObject({
+  statements: z.array(extractionStatementItemSchema).min(1),
+  concerns: z.array(extractionConcernItemSchema),
+});
+
+// Incremental extraction after an answer: unlike the initial extraction, BOTH
+// arrays may be empty — an answer that adds nothing new is a valid outcome,
+// and requiring content would pressure the model to fabricate. A valid empty
+// payload persists nothing.
+export const incrementalExtractionOutputSchema = z.strictObject({
+  statements: z.array(extractionStatementItemSchema),
+  concerns: z.array(extractionConcernItemSchema),
+});
+
+// Phase 2 adaptive next-question payload: candidates with claimed scores,
+// cited contradictions, and advisory readiness. Claimed scores are stored for
+// calibration comparison; ranking uses app-computed effective scores.
+export const claimedScoreSchema = z.number().int().min(0).max(3);
+
+export const questionCandidateOutputSchema = z.strictObject({
   body: z.string().min(1),
   whySelected: z.string().min(1),
+  concernCodes: z.array(concernCodeSchema).min(1),
+  claimedScores: z.strictObject({
+    coreGap: claimedScoreSchema,
+    sliceBounding: claimedScoreSchema,
+    contradictionResolution: claimedScoreSchema,
+  }),
+  targetsContradictionIndexes: z.array(z.number().int().min(0)),
+});
+
+export const contradictionOutputSchema = z.strictObject({
+  summary: z.string().min(1),
+  citedStatementIds: z.array(z.string().min(1)).min(2),
+});
+
+export const adaptiveNextQuestionOutputSchema = z.strictObject({
+  candidates: z.array(questionCandidateOutputSchema).min(1).max(5),
+  contradictions: z.array(contradictionOutputSchema),
+  readyAdvice: z.strictObject({
+    ready: z.boolean(),
+    why: z.string().min(1),
+  }),
 });
 
 // Both Fable tasks share one structured-output format (a stable output_config
@@ -180,6 +217,10 @@ export const concernIdSchema = z.object({
   concernId: z.string().min(1),
 });
 
+export const contradictionIdSchema = z.object({
+  contradictionId: z.string().min(1),
+});
+
 export const editConcernSchema = z.object({
   concernId: z.string().min(1),
   coverage: z.string().min(1),
@@ -281,7 +322,16 @@ export type ModelExecutionProvenance = z.infer<
 >;
 export type ProposeConcernInput = z.infer<typeof proposeConcernSchema>;
 export type ExtractionOutput = z.infer<typeof extractionOutputSchema>;
-export type NextQuestionOutput = z.infer<typeof nextQuestionOutputSchema>;
+export type IncrementalExtractionOutput = z.infer<
+  typeof incrementalExtractionOutputSchema
+>;
+export type QuestionCandidateOutput = z.infer<
+  typeof questionCandidateOutputSchema
+>;
+export type ContradictionOutput = z.infer<typeof contradictionOutputSchema>;
+export type AdaptiveNextQuestionOutput = z.infer<
+  typeof adaptiveNextQuestionOutputSchema
+>;
 export type FableTask = z.infer<typeof fableTaskSchema>;
 export type ProposeQuestionInput = z.infer<typeof proposeQuestionSchema>;
 export type ResolveQuestionInput = z.infer<typeof resolveQuestionSchema>;

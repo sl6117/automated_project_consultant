@@ -8,6 +8,7 @@ import {
   describeExtractionRequest,
   describeNextQuestionRequest,
 } from "../../../src/server/model/prompt";
+import { emptyAdaptiveContext } from "../helpers/adaptive-context";
 
 // A synthetic SDK response object; no test in this file touches the network.
 function fakeSdk(response: unknown, capture?: { params?: unknown }): MessagesSdk {
@@ -59,6 +60,11 @@ describe("createLiveModelClient", () => {
     const request = describeNextQuestionRequest({
       idea: "an idea",
       projectName: "P",
+      approved: {
+        statements: [{ id: "st-1", body: "an approved body" }],
+        concerns: [],
+      },
+      context: emptyAdaptiveContext(),
     });
     const result = await client.nextQuestion({
       idea: "an idea",
@@ -191,7 +197,12 @@ describe("createLiveModelClient", () => {
       client.nextQuestion({
         idea: "x",
         projectName: "y",
-        request: describeNextQuestionRequest({ idea: "x", projectName: "y" }),
+        request: describeNextQuestionRequest({
+          idea: "x",
+          projectName: "y",
+          approved: { statements: [], concerns: [] },
+          context: emptyAdaptiveContext(),
+        }),
       }),
     ).rejects.toThrow("connection reset");
   });

@@ -49,7 +49,7 @@ Extraction contract (extraction task only): {"statements": [{"kind": "<fact|deci
 
 Consultant envelope (next-question and coach tasks): respond with {"task": "<next_question|coach>", "payload": <the task's payload object>}. The task field must name the task you were asked to perform, and the payload must match that task's contract exactly.
 
-Next-question payload: {"body": "<exactly one question>", "whySelected": "<why this question, now, unblocks more than any other>"}. Ask the single question whose answer most reduces uncertainty for the first vertical slice. Prefer questions that bound workflow, operator, data, or scope. Never bundle multiple questions into one body, and never ask what the idea already answers.
+Next-question payload: {"candidates": [{"body": "<exactly one question>", "whySelected": "<your reason>", "concernCodes": ["<one or more ontology codes this question addresses>"], "claimedScores": {"coreGap": 0-3, "sliceBounding": 0-3, "contradictionResolution": 0-3}, "targetsContradictionIndexes": [<indexes into your contradictions array>]}, ...], "contradictions": [{"summary": "<a real tension between approved statements>", "citedStatementIds": ["<at least two approved statement ids from the prompt>"]}, ...], "readyAdvice": {"ready": true|false, "why": "<advisory only>"}}. Offer one to five candidates, each exactly one question, never a bundle, never a question the ledger already answers. Claimed scores are your honest 0-3 assessments: coreGap for how directly the question fills uncovered core concerns, sliceBounding for how much it bounds the first vertical slice, contradictionResolution for how directly it resolves a cited tension. The application recomputes coreGap and contradictionResolution deterministically from the ledger and ranks with those; only your sliceBounding claim influences ranking, and all claims are stored and compared for calibration. Cite contradictions only between statement ids actually supplied in the prompt; an unknown id invalidates the entire response. An empty contradictions array is valid. readyAdvice is advisory and never decides stopping by itself.
 
 Coach payload: {"recommendation": "<the single advised action>", "whyNow": "<why this advice applies to the current decision>", "technique": "<the named technique or practice to apply>", "tradeoffs": "<what the advice costs or risks>", "gotcha": "<the most likely way following this advice goes wrong>", "confidence": "<low|medium|high>", "evidenceWouldChange": "<the concrete observation that would falsify or change this advice>"}. Every field is required. Confidence states how much to trust the advice given the evidence available. evidenceWouldChange must name something observable, not a vague caveat — advice without a falsifier is unaccountable.`;
 
@@ -131,10 +131,76 @@ export const extractionOutputFormat = {
 const nextQuestionPayloadJsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["body", "whySelected"],
+  required: ["candidates", "contradictions", "readyAdvice"],
   properties: {
-    body: { type: "string", minLength: 1 },
-    whySelected: { type: "string", minLength: 1 },
+    candidates: {
+      type: "array",
+      minItems: 1,
+      maxItems: 5,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "body",
+          "whySelected",
+          "concernCodes",
+          "claimedScores",
+          "targetsContradictionIndexes",
+        ],
+        properties: {
+          body: { type: "string", minLength: 1 },
+          whySelected: { type: "string", minLength: 1 },
+          concernCodes: {
+            type: "array",
+            minItems: 1,
+            items: { type: "string", enum: concernCodeEnum },
+          },
+          claimedScores: {
+            type: "object",
+            additionalProperties: false,
+            required: ["coreGap", "sliceBounding", "contradictionResolution"],
+            properties: {
+              coreGap: { type: "integer", minimum: 0, maximum: 3 },
+              sliceBounding: { type: "integer", minimum: 0, maximum: 3 },
+              contradictionResolution: {
+                type: "integer",
+                minimum: 0,
+                maximum: 3,
+              },
+            },
+          },
+          targetsContradictionIndexes: {
+            type: "array",
+            items: { type: "integer", minimum: 0 },
+          },
+        },
+      },
+    },
+    contradictions: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["summary", "citedStatementIds"],
+        properties: {
+          summary: { type: "string", minLength: 1 },
+          citedStatementIds: {
+            type: "array",
+            minItems: 2,
+            items: { type: "string", minLength: 1 },
+          },
+        },
+      },
+    },
+    readyAdvice: {
+      type: "object",
+      additionalProperties: false,
+      required: ["ready", "why"],
+      properties: {
+        ready: { type: "boolean" },
+        why: { type: "string", minLength: 1 },
+      },
+    },
   },
 };
 
@@ -158,6 +224,47 @@ const coachPayloadJsonSchema = {
     gotcha: { type: "string", minLength: 1 },
     confidence: { type: "string", enum: ["low", "medium", "high"] },
     evidenceWouldChange: { type: "string", minLength: 1 },
+  },
+};
+
+// Incremental extraction reuses the extraction item shapes but allows both
+// arrays to be empty: an answer that adds nothing new is a valid outcome.
+// This is a distinct Sonnet task with its own output_config; the extraction
+// format is used exactly once per session (at start), so the single
+// cache-write on the transition to incremental costs one write, not the
+// per-switch thrashing a shared-format envelope prevents on the Fable side.
+export const incrementalExtractionOutputFormat = {
+  type: "json_schema" as const,
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["statements", "concerns"],
+    properties: {
+      statements: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["kind", "body"],
+          properties: {
+            kind: { type: "string", enum: statementKindEnum },
+            body: { type: "string", minLength: 1 },
+          },
+        },
+      },
+      concerns: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["code", "coverage"],
+          properties: {
+            code: { type: "string", enum: concernCodeEnum },
+            coverage: { type: "string", minLength: 1 },
+          },
+        },
+      },
+    },
   },
 };
 
@@ -192,9 +299,67 @@ export type ModelRequestDescription = {
   system: SystemBlock[];
   messages: { role: "user"; content: string }[];
   output_config: {
-    format: typeof extractionOutputFormat | typeof fableOutputFormat;
+    format:
+      | typeof extractionOutputFormat
+      | typeof incrementalExtractionOutputFormat
+      | typeof fableOutputFormat;
   };
 };
+
+export type ResolvedAnswerContext = {
+  questionBody: string;
+  answerBody: string;
+  disposition: string;
+};
+
+export function describeIncrementalExtractionRequest(input: {
+  projectName: string;
+  idea: string;
+  approved: ApprovedLedgerSlice;
+  resolved: ResolvedAnswerContext;
+}): ModelRequestDescription {
+  return {
+    model: modelCatalog.sonnet.apiId,
+    max_tokens: MAX_OUTPUT_TOKENS,
+    system: buildSystemPrefix(),
+    messages: [
+      { role: "user", content: buildIncrementalExtractionUserMessage(input) },
+    ],
+    output_config: { format: incrementalExtractionOutputFormat },
+  };
+}
+
+export function buildIncrementalExtractionUserMessage(input: {
+  projectName: string;
+  idea: string;
+  approved: ApprovedLedgerSlice;
+  resolved: ResolvedAnswerContext;
+}): string {
+  return [
+    "Incremental extraction: propose only the NEW statements and concern",
+    "coverage that the answer below adds beyond the approved ledger. Do not",
+    "restate rows that are already approved. If the answer adds nothing new,",
+    "return empty statements and concerns arrays — that is a valid, honest",
+    "response; never invent content to fill them.",
+    `Project name: ${input.projectName}`,
+    `Rough idea: ${input.idea}`,
+    APPROVED_STATEMENTS_HEADING,
+    input.approved.statements.length > 0
+      ? input.approved.statements
+          .map((row) => `- [${row.id}] ${row.body}`)
+          .join("\n")
+      : "- (none approved yet)",
+    APPROVED_CONCERNS_HEADING,
+    input.approved.concerns.length > 0
+      ? input.approved.concerns
+          .map((row) => `- [${row.id}] ${row.code}: ${row.coverage}`)
+          .join("\n")
+      : "- (none approved yet)",
+    `Resolved question: ${input.resolved.questionBody}`,
+    `Disposition: ${input.resolved.disposition}`,
+    `Answer: ${input.resolved.answerBody}`,
+  ].join("\n");
+}
 
 export const MAX_OUTPUT_TOKENS = 1_500;
 
@@ -211,9 +376,36 @@ export function describeExtractionRequest(input: {
   };
 }
 
+// The approved ledger slice for the adaptive path: rows carry their ids
+// because downstream ranking and contradiction citations reference them.
+// This is dynamic suffix material only — never prefix.
+export type ApprovedLedgerSlice = {
+  statements: { id: string; body: string }[];
+  concerns: { id: string; code: string; coverage: string }[];
+};
+
+// The rest of the spec-required adaptive context: missing core codes, open
+// tensions, and resolved questions. Also dynamic suffix material only, and
+// required: every adaptive request states this context explicitly, even when
+// it is empty.
+export type AdaptiveLedgerContext = {
+  missingCoreCodes: string[];
+  openContradictions: { id: string; summary: string }[];
+  resolvedQuestions: { body: string; disposition: string }[];
+};
+
+// Section headings shared with the recorded client's placeholder
+// substitution: parsing the statement-id section by these exact strings keeps
+// the fixture plumbing from silently drifting when a heading is reworded.
+export const APPROVED_STATEMENTS_HEADING = "Approved statements (id: body):";
+export const APPROVED_CONCERNS_HEADING =
+  "Approved concern coverage (id: code: coverage):";
+
 export function describeNextQuestionRequest(input: {
   projectName: string;
   idea: string;
+  approved: ApprovedLedgerSlice;
+  context: AdaptiveLedgerContext;
 }): ModelRequestDescription {
   return {
     model: modelCatalog.fable.apiId,
@@ -254,12 +446,44 @@ export function buildExtractionUserMessage(input: {
 export function buildNextQuestionUserMessage(input: {
   projectName: string;
   idea: string;
+  approved: ApprovedLedgerSlice;
+  context: AdaptiveLedgerContext;
 }): string {
+  const context = input.context;
   return [
     "Choose the single next question that most reduces uncertainty, and say",
-    "why it was selected.",
+    "why it was selected. The approved ledger rows below are canonical,",
+    "human-ratified state and outrank the raw idea; their ids identify them.",
     `Project name: ${input.projectName}`,
     `Rough idea: ${input.idea}`,
+    APPROVED_STATEMENTS_HEADING,
+    input.approved.statements.length > 0
+      ? input.approved.statements
+          .map((row) => `- [${row.id}] ${row.body}`)
+          .join("\n")
+      : "- (none approved yet)",
+    APPROVED_CONCERNS_HEADING,
+    input.approved.concerns.length > 0
+      ? input.approved.concerns
+          .map((row) => `- [${row.id}] ${row.code}: ${row.coverage}`)
+          .join("\n")
+      : "- (none approved yet)",
+    "Missing core concern codes (uncovered gaps, in ontology order):",
+    context.missingCoreCodes.length > 0
+      ? context.missingCoreCodes.map((code) => `- ${code}`).join("\n")
+      : "- (none)",
+    "Open tensions already raised (id: summary); do not re-raise these:",
+    context.openContradictions.length > 0
+      ? context.openContradictions
+          .map((row) => `- [${row.id}] ${row.summary}`)
+          .join("\n")
+      : "- (none)",
+    "Resolved questions (disposition: body); do not ask these again:",
+    context.resolvedQuestions.length > 0
+      ? context.resolvedQuestions
+          .map((row) => `- ${row.disposition}: ${row.body}`)
+          .join("\n")
+      : "- (none)",
   ].join("\n");
 }
 

@@ -5,7 +5,17 @@ import {
 } from "./artifact-versions";
 import { listCoachNotes, type CoachNoteRow } from "./coach-notes";
 import { listConcerns } from "./concerns";
+import {
+  citedStatementIdsOf,
+  listContradictions,
+  type ContradictionRow,
+} from "./contradictions";
+import { evaluateStopChecklist, type StopChecklist } from "./framing";
 import { sessionSpend, type SessionSpend } from "./model-attempts";
+import {
+  listCandidatesForModelCall,
+  type QuestionCandidateRow,
+} from "./question-candidates";
 import type { SessionInitializationStatus } from "./schemas";
 import { listQuestions, type QuestionWithAnswer } from "./questions";
 import { LedgerValidationError, listStatements } from "./statements";
@@ -25,6 +35,18 @@ export type SessionDetail = {
   artifactSets: ArtifactSet[];
   initializationStatus: SessionInitializationStatus;
   spend: SessionSpend;
+  // Candidates from the adaptive call that produced the pending question.
+  pendingCandidates: QuestionCandidateRow[];
+  // Open tensions with their cited statements resolved to bodies for display;
+  // closed rows stay in the ledger as provenance and surface only as a count.
+  openTensions: OpenTension[];
+  closedTensionCount: number;
+  framedAt: string | null;
+  stopChecklist: StopChecklist;
+};
+
+export type OpenTension = ContradictionRow & {
+  citedStatements: { id: string; body: string; status: string }[];
 };
 
 export type ArtifactSet = {
@@ -59,6 +81,7 @@ export function getSessionDetail(
       `SELECT
          s.id AS session_id,
          s.initialization_status AS initialization_status,
+         s.framed_at AS framed_at,
          p.id AS project_id,
          p.name AS project_name,
          p.idea AS idea
@@ -70,6 +93,7 @@ export function getSessionDetail(
     | {
         session_id: string;
         initialization_status: SessionInitializationStatus;
+        framed_at: string | null;
         project_id: string;
         project_name: string;
         idea: string;
@@ -82,6 +106,19 @@ export function getSessionDetail(
 
   const questions = listQuestions(db, sessionId);
   const pending = questions.find((question) => question.status === "pending");
+
+  const allTensions = listContradictions(db, sessionId);
+  const openTensions: OpenTension[] = allTensions
+    .filter((tension) => tension.status === "open")
+    .map((tension) => ({
+      ...tension,
+      citedStatements: citedStatementIdsOf(tension).flatMap((id) => {
+        const statement = db
+          .prepare("SELECT id, body, status FROM statements WHERE id = ?")
+          .get(id) as { id: string; body: string; status: string } | undefined;
+        return statement ? [statement] : [];
+      }),
+    }));
 
   return {
     sessionId: row.session_id,
@@ -100,5 +137,12 @@ export function getSessionDetail(
     artifactSets: groupArtifactSets(listArtifactVersions(db, sessionId)),
     initializationStatus: row.initialization_status,
     spend: sessionSpend(db, sessionId),
+    pendingCandidates: pending?.model_call_id
+      ? listCandidatesForModelCall(db, pending.model_call_id)
+      : [],
+    openTensions,
+    closedTensionCount: allTensions.length - openTensions.length,
+    framedAt: row.framed_at,
+    stopChecklist: evaluateStopChecklist(db, sessionId),
   };
 }

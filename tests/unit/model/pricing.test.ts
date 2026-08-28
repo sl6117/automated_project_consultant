@@ -11,6 +11,9 @@ import {
   describeNextQuestionRequest,
 } from "../../../src/server/model/prompt";
 import { openMemoryLedger } from "../../../src/server/db/open";
+import { emptyAdaptiveContext } from "../helpers/adaptive-context";
+
+const NO_APPROVED = { statements: [], concerns: [] };
 
 describe("costOfUsageMicrocents", () => {
   test("prices every usage component including both cache-write tiers", () => {
@@ -50,19 +53,31 @@ describe("estimateRequestCostMicrocents", () => {
   test("is deterministic and grows with input size", () => {
     const small = estimateRequestCostMicrocents(
       "fable",
-      describeNextQuestionRequest({ idea: "a".repeat(100), projectName: "P" }),
+      describeNextQuestionRequest({
+        idea: "a".repeat(100),
+        projectName: "P",
+        approved: NO_APPROVED,
+        context: emptyAdaptiveContext(),
+      }),
     );
     const large = estimateRequestCostMicrocents(
       "fable",
       describeNextQuestionRequest({
         idea: "a".repeat(100_000),
         projectName: "P",
+        approved: NO_APPROVED,
+        context: emptyAdaptiveContext(),
       }),
     );
     expect(
       estimateRequestCostMicrocents(
         "fable",
-        describeNextQuestionRequest({ idea: "a".repeat(100), projectName: "P" }),
+        describeNextQuestionRequest({
+        idea: "a".repeat(100),
+        projectName: "P",
+        approved: NO_APPROVED,
+        context: emptyAdaptiveContext(),
+      }),
       ),
     ).toBe(small);
     expect(large).toBeGreaterThan(small);
@@ -73,11 +88,21 @@ describe("estimateRequestCostMicrocents", () => {
     // Same character count; the emoji string is four bytes per character.
     const ascii = estimateRequestCostMicrocents(
       "fable",
-      describeNextQuestionRequest({ idea: "a".repeat(200), projectName: "P" }),
+      describeNextQuestionRequest({
+        idea: "a".repeat(200),
+        projectName: "P",
+        approved: NO_APPROVED,
+        context: emptyAdaptiveContext(),
+      }),
     );
     const emoji = estimateRequestCostMicrocents(
       "fable",
-      describeNextQuestionRequest({ idea: "🍜".repeat(200), projectName: "P" }),
+      describeNextQuestionRequest({
+        idea: "🍜".repeat(200),
+        projectName: "P",
+        approved: NO_APPROVED,
+        context: emptyAdaptiveContext(),
+      }),
     );
     expect(emoji).toBeGreaterThan(ascii);
   });
@@ -86,6 +111,8 @@ describe("estimateRequestCostMicrocents", () => {
     const question = describeNextQuestionRequest({
       idea: "one household inbox",
       projectName: "P",
+      approved: NO_APPROVED,
+      context: emptyAdaptiveContext(),
     });
     const coach = describeCoachRequest({
       idea: "one household inbox",
@@ -114,6 +141,8 @@ describe("estimateRequestCostMicrocents", () => {
     const request = describeNextQuestionRequest({
       idea: "one household inbox",
       projectName: "P",
+      approved: NO_APPROVED,
+      context: emptyAdaptiveContext(),
     });
     // fable: input 1000, output 5000 microcents per token.
     const expected =
@@ -125,7 +154,12 @@ describe("estimateRequestCostMicrocents", () => {
   });
 
   test("task framing, labels, and output schema all affect the estimate", () => {
-    const semantic = { idea: "one household inbox", projectName: "P" };
+    const semantic = {
+      idea: "one household inbox",
+      projectName: "P",
+      approved: NO_APPROVED,
+      context: emptyAdaptiveContext(),
+    };
     // Different tasks share the identical semantic input but differ in
     // framing text and output schema — the serialized descriptions differ,
     // so the estimates must too.
