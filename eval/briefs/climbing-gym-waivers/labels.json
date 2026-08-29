@@ -1,0 +1,18 @@
+{
+  "briefId": "climbing-gym-waivers",
+  "status": "authored",
+  "instructions": "Owner-authored only; Claude never edits label content. Fill every section from the brief BEFORE running any consultant on it, then change status to \"authored\". requiredStatements: statement kinds plus a phrase the statement body must mention. forbiddenContent: phrases no approved statement may assert. requiredConcerns: codes that must end with approved coverage. expectedTensions: tensions the consultant should surface. stopTurn: the ask-turn by which the ready offer should be achievable (null if not labeling it). questionRankings: for turns you choose to label, the concern codes the best next question should target.",
+  "requiredStatements": [
+    {"kind":"fact",
+    "mustMention": "verify waivers on check-in"},
+      {"kind": "fact",
+    "mustMention": "sign at the kiosk"},
+    {"kind": "fact",
+    "mustMention": "from a link beforehand"}
+  ],
+  "forbiddenContent": ["auto-renewal"],
+  "requiredConcerns": ["workflow", "success", "problem", "user"],
+  "expectedTensions": [{"summary": "signed paper originals are what counts, but we want to go fully paperless and shred everything."}],
+  "stopTurn": 7,
+  "questionRankings": [{"turn":1, "preferredCodes": ["workflow"], "note": "do we need a functionality where the operator can print the waiver from the electronic system"}, {"turn":2, "preferredCodes": ["problem"], "note": "how do we gate insufficient waivers at check-in?"}]
+}

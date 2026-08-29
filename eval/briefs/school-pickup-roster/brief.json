@@ -1,0 +1,27 @@
+{
+  "id": "school-pickup-roster",
+  "projectName": "Gate Rota",
+  "idea": "Five families share the school pickup run and coordinate by frantic morning texts. I want a shared roster showing who drives which day, with a way to swap turns when someone is ill or traveling.",
+  "domain": "education",
+  "traits": ["contradiction"],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "Twice this term a swap arranged by text was forgotten and kids waited at the gate with no driver."
+    ],
+    "user": [
+      "Five parents, all on phones; one of us adjusts the schedule each term. The school is not involved."
+    ],
+    "workflow": [
+      "The term schedule is set once; a parent who needs cover requests a swap, and every swap must be explicitly approved by the parent taking it over — nothing is reassigned without their confirmation.",
+      "Actually, when someone marks themselves ill the roster should just reassign their day to whoever has the fewest turns automatically, without waiting for anyone to accept."
+    ],
+    "success": [
+      "Zero no-driver incidents in a term and no more morning text scrambles."
+    ],
+    "safety": [
+      "This is about children: it must always be unambiguous who is responsible today, and a swap that nobody accepted must never look confirmed."
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "plant-watering-kiosk",
+  "projectName": "Leaf Duty",
+  "idea": "Our office has sixty plants and a rotating volunteer watering crew that keeps killing them — some plants get watered by three people in a week, others by nobody. I want a simple kiosk by the kitchen showing what needs water today and who claimed it.",
+  "domain": "workplace",
+  "traits": [],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "Double-watering rots roots and gaps dry plants out; we lost nine plants last quarter to uncoordinated care."
+    ],
+    "user": [
+      "About ten volunteers who tap the kiosk, and the office manager who maintains the plant list and schedules."
+    ],
+    "workflow": [
+      "Each plant has a watering interval; the kiosk lists what is due today; a volunteer claims a plant, waters it, and marks it done, which resets its clock."
+    ],
+    "success": [
+      "A quarter with no plant deaths from watering, and the kiosk answering 'what needs doing' without asking the office manager."
+    ],
+    "non-goals": [
+      "No sensors, no automation, no mobile app — the shared kiosk is the whole interface."
+    ]
+  }
+}

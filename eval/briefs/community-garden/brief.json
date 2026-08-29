@@ -1,0 +1,27 @@
+{
+  "id": "community-garden",
+  "projectName": "Plot Notes",
+  "idea": "Our community garden group needs something to help us organize stuff better. People keep missing things and it causes friction.",
+  "domain": "community",
+  "traits": ["vague", "hard-coverage"],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "Honestly the friction is about the shared chores: watering and composting get skipped because nobody knows whose week it is.",
+      "The missed things are mostly announcements; they get buried in a group chat."
+    ],
+    "user": [
+      "About twenty plot holders, mostly retirees on phones; two coordinators who set schedules."
+    ],
+    "workflow": [
+      "A coordinator sets the rota each season; members check what is theirs this week and mark it done; announcements get posted where people actually see them."
+    ],
+    "success": [
+      "If watering stops getting skipped and people stop claiming they never saw the announcement, that is a win."
+    ],
+    "constraints": [
+      "There is no budget at all and no one technical to maintain anything complicated."
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "briefId": "van-maintenance-log",
+  "status": "authored",
+  "instructions": "Owner-authored only; Claude never edits label content. Fill every section from the brief BEFORE running any consultant on it, then change status to \"authored\". requiredStatements: statement kinds plus a phrase the statement body must mention. forbiddenContent: phrases no approved statement may assert. requiredConcerns: codes that must end with approved coverage. expectedTensions: tensions the consultant should surface. stopTurn: the ask-turn by which the ready offer should be achievable (null if not labeling it). questionRankings: for turns you choose to label, the concern codes the best next question should target.",
+  "requiredStatements": [
+    {"kind":"fact",
+    "mustMention": "reminder was a sticky note in a different van"},
+      {"kind": "fact",
+    "mustMention": "completed work gets entered from the invoice"}
+  ],
+  "forbiddenContent": [
+    "service costs"
+  ],
+  "requiredConcerns": ["workflow", "success", "problem", "user"],
+  "expectedTensions": [{"summary": "what if a van is retired"}],
+  "stopTurn": null,
+  "questionRankings": [{"turn":1, "preferredCodes": ["workflow"], "note": "how do we handle van retirement?"}]
+}

@@ -1,0 +1,16 @@
+{
+  "briefId": "pharmacy-refill",
+  "status": "authored",
+  "instructions": "Owner-authored only; Claude never edits label content. Fill every section from the brief BEFORE running any consultant on it, then change status to \"authored\". requiredStatements: statement kinds plus a phrase the statement body must mention. forbiddenContent: phrases no approved statement may assert. requiredConcerns: codes that must end with approved coverage. expectedTensions: tensions the consultant should surface. stopTurn: the ask-turn by which the ready offer should be achievable (null if not labeling it). questionRankings: for turns you choose to label, the concern codes the best next question should target.",
+  "requiredStatements": [
+    {"kind":"fact",
+    "mustMention": "I notice only when they come in late and flustered"},
+      {"kind": "decision",
+    "mustMention": "unclear record must produce no reminder at all"}
+  ],
+  "forbiddenContent": ["data analysis per patient"],
+  "requiredConcerns": ["workflow", "success", "problem"],
+  "expectedTensions": [],
+  "stopTurn": 5,
+  "questionRankings": [{"turn":1, "preferredCodes": ["workflow"], "note": "how do we handle unclear records?"}]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "choir-sheet-library",
+  "projectName": "Sheet Shelf",
+  "idea": "Our forty-person choir owns hundreds of scores in a cupboard and nobody knows what we have or who borrowed what. I want a catalog with borrowing, so the librarian stops being a human search engine.",
+  "domain": "arts",
+  "traits": [],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "Before every concert we rebuy scores we already own because nobody can confirm the cupboard has enough copies."
+    ],
+    "user": [
+      "One librarian maintains the catalog; members search and request; the conductor plans programmes from what we own."
+    ],
+    "workflow": [
+      "The librarian catalogs each title with copy count; members borrow and return through her; the conductor checks availability when planning."
+    ],
+    "success": [
+      "No duplicate purchases next season and every borrowed copy traceable to a member."
+    ],
+    "data": [
+      "Roughly 400 titles, 10 to 50 copies each; title, composer, arrangement, and copy count matter; no sheet music scans in scope."
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "birdsong-logger",
+  "projectName": "Dawn Chorus",
+  "idea": "I record birdsong at fixed spots every week and my recordings are a mess of files on three drives. I want a catalog for the recordings and what I identified in them, so the collection is finally usable.",
+  "domain": "hobby-science",
+  "traits": ["data-heavy", "hard-coverage"],
+  "maxTurns": 14,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "I cannot answer even simple questions like which species I heard at the reservoir last spring; finding anything means opening dozens of files."
+    ],
+    "user": [
+      "Just me for entry; a university contact might one day want exports, but she would never use the tool herself."
+    ],
+    "workflow": [
+      "After each session I copy files off the recorder, tag each with site, date, weather, and species heard, and later search by any of those."
+    ],
+    "success": [
+      "The real test is retrieval: any species-site-season question answered in under a minute, for the whole back catalog."
+    ],
+    "data": [
+      "About 4,000 WAV files, 30 to 300 MB each, across three external drives; the catalog should reference files where they live rather than move them.",
+      "Species tags follow a standard checklist; sites are a fixed list of nine locations I survey."
+    ],
+    "operations": [
+      "The drives travel with me; the catalog must tell me when a referenced drive is not plugged in instead of erroring."
+    ]
+  }
+}

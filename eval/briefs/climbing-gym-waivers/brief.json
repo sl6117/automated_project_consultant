@@ -1,0 +1,29 @@
+{
+  "id": "climbing-gym-waivers",
+  "projectName": "First Ascent Forms",
+  "idea": "Our climbing gym still does paper liability waivers and the front desk queue at peak times is embarrassing. I want digital waivers signed at a kiosk or in advance. Our insurer audits us annually, and our lawyer insists the signed paper originals are what counts, so we must keep every paper form forever. Ideally though we go fully paperless and shred everything.",
+  "domain": "fitness",
+  "traits": ["safety-sensitive", "constraint-dominated", "contradiction"],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "Peak-time queues are fifteen minutes just for waivers, and finding a specific signed form for the insurer takes an afternoon of digging through boxes."
+    ],
+    "user": [
+      "Front-desk staff verify waivers on check-in; climbers sign once a year; the manager pulls forms for audits."
+    ],
+    "workflow": [
+      "New climbers sign at the kiosk or from a link beforehand; the desk sees a green check on the member profile; audits search by name and date range."
+    ],
+    "success": [
+      "Waiver queue basically gone at peak, and any form retrievable in under a minute during the audit."
+    ],
+    "constraints": [
+      "The insurer requires the signature format they already approved and seven-year minimum retention; whatever we do has to satisfy the annual audit as-is this year, not after a policy renegotiation."
+    ],
+    "safety": [
+      "An adult signing for someone else's child is the risk case; guardianship has to be asserted explicitly, and an unsigned climber must be flagged at check-in, hard."
+    ]
+  }
+}

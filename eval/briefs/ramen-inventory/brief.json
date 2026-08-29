@@ -1,0 +1,30 @@
+{
+  "id": "ramen-inventory",
+  "projectName": "Broth Books",
+  "idea": "Our ramen shop wastes money because we over-order perishables and run out of staples. I want an inventory and budget tracker fed by our supplier invoices and a nightly stock count, so ordering decisions come from numbers instead of gut feel.",
+  "domain": "food-service",
+  "traits": ["data-heavy", "early-stop"],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "We throw away spoiled produce weekly and still ran out of noodles twice last month; ordering is guesswork."
+    ],
+    "user": [
+      "Me (the owner) doing the ordering, and whichever cook closes does the nightly count on a phone."
+    ],
+    "workflow": [
+      "Invoices get entered when deliveries arrive; the closer counts key items nightly; before ordering I look at usage and stock to decide quantities."
+    ],
+    "success": [
+      "Spoilage waste halves and we have zero stockouts of the eight staple ingredients over a month."
+    ],
+    "data": [
+      "About 60 ingredients, two suppliers, invoices as paper or PDF; the nightly count covers only the 15 perishable or staple items. Two years of history would be ideal.",
+      "Prices change seasonally, so the tracker must keep the price per invoice, not one fixed price per ingredient."
+    ],
+    "constraints": [
+      "Whatever we use has to work on the shop's old Windows laptop and one Android phone."
+    ]
+  }
+}

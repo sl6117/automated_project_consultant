@@ -1,0 +1,16 @@
+{
+  "briefId": "ramen-inventory",
+  "status": "authored",
+  "instructions": "Owner-authored only; Claude never edits label content. Fill every section from the brief BEFORE running any consultant on it, then change status to \"authored\". requiredStatements: statement kinds plus a phrase the statement body must mention. forbiddenContent: phrases no approved statement may assert. requiredConcerns: codes that must end with approved coverage. expectedTensions: tensions the consultant should surface. stopTurn: the ask-turn by which the ready offer should be achievable (null if not labeling it). questionRankings: for turns you choose to label, the concern codes the best next question should target.",
+  "requiredStatements": [
+    {"kind":"fact",
+  "mustMention": "Prices change seasonally"},
+    {"kind": "fact",
+  "mustMention": "Windows laptop"}
+  ],
+  "forbiddenContent": ["promotions", "Manager"],
+  "requiredConcerns": ["workflow", "success", "problem", "user", "data"],
+  "expectedTensions": [{"summary": "zero stockouts may mean we have too much inventory, and make the objective of halving spoilage waste difficult to achieve."}],
+  "stopTurn": 3,
+  "questionRankings": [{"turn":1, "preferredCodes": ["success"], "note": "ask about the success criteria in-depth"}, {"turn":2, "preferredCodes": ["data"], "note": "ask about available data in-depth"}]
+}

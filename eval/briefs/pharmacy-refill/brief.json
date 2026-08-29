@@ -1,0 +1,32 @@
+{
+  "id": "pharmacy-refill",
+  "projectName": "Refill Nudge",
+  "idea": "I run a small independent pharmacy and want a tool that reminds patients when their repeat prescriptions are due for refill. I am the only pharmacist; my technician handles pickup. Getting a reminder wrong could mean a missed medication, so I would rather send no reminder than a wrong one.",
+  "domain": "healthcare",
+  "traits": ["safety-sensitive", "early-stop"],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "Patients forget refills and lapse on medication; today I notice only when they come in late and flustered."
+    ],
+    "user": [
+      "I am the operator; my technician marks pickups. Patients only receive messages, they never log in."
+    ],
+    "workflow": [
+      "When I dispense a repeat, the tool schedules a reminder a few days before the refill date; the technician marks it done at pickup."
+    ],
+    "success": [
+      "Fewer lapsed repeats: if late pickups drop noticeably within two months, it works."
+    ],
+    "safety": [
+      "A wrong dosage or wrong-patient reminder is the nightmare case. Reminders must never state dosage, only that a refill is due, and an unclear record must produce no reminder at all."
+    ],
+    "data": [
+      "Names, phone numbers, and medication names are sensitive. Everything stays on the pharmacy computer; no cloud."
+    ],
+    "non-goals": [
+      "No online ordering, no payments, no chat with patients in the first version."
+    ]
+  }
+}

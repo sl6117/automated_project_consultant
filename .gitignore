@@ -43,6 +43,9 @@ yarn-error.log*
 # live consultation ledger and raw model payloads
 /data/
 
+# regenerable evaluation output (replayed ledgers, exports, scratch)
+/eval/out/
+
 # vercel
 .vercel
 

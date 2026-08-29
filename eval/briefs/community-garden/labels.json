@@ -1,0 +1,18 @@
+{
+  "briefId": "community-garden",
+  "status": "authored",
+  "instructions": "Owner-authored only; Claude never edits label content. Fill every section from the brief BEFORE running any consultant on it, then change status to \"authored\". requiredStatements: statement kinds plus a phrase the statement body must mention. forbiddenContent: phrases no approved statement may assert. requiredConcerns: codes that must end with approved coverage. expectedTensions: tensions the consultant should surface. stopTurn: the ask-turn by which the ready offer should be achievable (null if not labeling it). questionRankings: for turns you choose to label, the concern codes the best next question should target.",
+  "requiredStatements": [
+    {"kind":"fact",
+    "mustMention": "nobody knows whose week it is"},
+      {"kind": "fact",
+    "mustMention": "they get buried in a group chat"},
+    {"kind": "fact",
+    "mustMention": "coordinator sets the rota each season"}
+  ],
+  "forbiddenContent": ["water scheduling per plants"],
+  "requiredConcerns": ["workflow", "success", "problem", "user"],
+  "expectedTensions": [{"summary": "we want an easy way to track and organize, but nobody is technical to maintain anything complicated."}],
+  "stopTurn": null,
+  "questionRankings": [{"turn":1, "preferredCodes": ["user"], "note": "how tech-savvy is the coordinator?"}]
+}

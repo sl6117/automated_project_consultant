@@ -1,0 +1,26 @@
+{
+  "id": "teatime-newsletter",
+  "projectName": "Teatime Post",
+  "idea": "I write a fortnightly tea-tasting newsletter for about 300 subscribers. I draft in plain text and want a small tool that keeps my subscriber list, lets people join or leave via a link, and sends the issue when I hit go. That is genuinely all I want it to do.",
+  "domain": "media",
+  "traits": ["early-stop"],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "I manage the list by hand in a spreadsheet and pasting 300 addresses into BCC is error-prone; I have leaked addresses into the To field once already."
+    ],
+    "user": [
+      "Only me sending; subscribers just receive email and click join or leave links."
+    ],
+    "workflow": [
+      "People subscribe through a link; every issue I paste my draft in, preview, and send; unsubscribes take effect immediately without my involvement."
+    ],
+    "success": [
+      "An issue goes out in under five minutes of my time with zero address leaks, and unsubscribes never need me."
+    ],
+    "non-goals": [
+      "No analytics, no templates, no scheduling, no paid tiers — I actively do not want them."
+    ]
+  }
+}

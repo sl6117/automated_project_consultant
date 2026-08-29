@@ -1,0 +1,30 @@
+{
+  "id": "freelance-invoices",
+  "projectName": "Studio Ledger",
+  "idea": "I am a freelance illustrator and invoicing eats my evenings. I want something that turns my logged hours into invoices and tracks who has paid. It must run on the cheap shared hosting I already pay for, and I refuse to pay monthly for yet another SaaS.",
+  "domain": "finance",
+  "traits": ["constraint-dominated"],
+  "maxTurns": 12,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "Invoices go out late and I lose track of unpaid ones; twice last year I simply forgot to bill a client."
+    ],
+    "user": [
+      "Only me. Clients get a PDF by email; they never touch the system."
+    ],
+    "workflow": [
+      "I log hours per project as I work; at month end I pick a client, the tool drafts the invoice from unbilled hours, I send it and mark payments when they arrive."
+    ],
+    "success": [
+      "Every month closes with all hours billed within three days and I can see outstanding balances at a glance."
+    ],
+    "constraints": [
+      "Shared PHP-era hosting: no long-running processes, no additional paid services, no monthly subscription. My accountant needs a CSV export at year end.",
+      "Invoices must carry my country's VAT number and sequential invoice numbers with no gaps — a legal requirement."
+    ],
+    "non-goals": [
+      "No time-tracking timers, no client portal, no online payment collection."
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "van-maintenance-log",
+  "projectName": "Fleet Sheet",
+  "idea": "We run four delivery vans and maintenance records live in a glovebox folder per van. I want the records in one place so services stop getting missed.",
+  "domain": "logistics",
+  "traits": ["hard-coverage"],
+  "maxTurns": 14,
+  "fallback": { "disposition": "unknown" },
+  "answers": {
+    "problem": [
+      "One van missed its brake service because the reminder was a sticky note in a different van; repairs cost triple what the service would have."
+    ],
+    "user": [
+      "Two drivers who report issues, and me booking the garage work. The garage itself stays on phone and paper."
+    ],
+    "workflow": [
+      "Drivers log an issue or mileage when they park up; I check upcoming services weekly and book the garage; completed work gets entered from the invoice."
+    ],
+    "success": [
+      "No overdue services across the fleet for a full quarter, and the full history of any van printable when we sell it."
+    ],
+    "operations": [
+      "I am the only person who would fix the tool if it breaks, and I am not technical; it has to survive being ignored for weeks."
+    ]
+  }
+}

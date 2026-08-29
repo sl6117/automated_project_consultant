@@ -1,0 +1,20 @@
+{
+  "briefId": "till-shift-notes",
+  "status": "authored",
+  "instructions": "Owner-authored only; Claude never edits label content. Fill every section from the brief BEFORE running any consultant on it, then change status to \"authored\". requiredStatements: statement kinds plus a phrase the statement body must mention. forbiddenContent: phrases no approved statement may assert. requiredConcerns: codes that must end with approved coverage. expectedTensions: tensions the consultant should surface. stopTurn: the ask-turn by which the ready offer should be achievable (null if not labeling it). questionRankings: for turns you choose to label, the concern codes the best next question should target.",
+  "requiredStatements": [
+    {"kind":"fact",
+    "mustMention": "Handover today is word of mouth"},
+      {"kind": "decision",
+    "mustMention": "code and alarm word should not live in the tool"}
+  ],
+  "forbiddenContent": [
+    "tip quantities"
+  ],
+  "requiredConcerns": ["workflow", "success", "problem", "user"],
+  "expectedTensions": [],
+  "stopTurn": null,
+  "questionRankings": [
+    {"turn":1, "preferredCodes": ["workflow"], "note": "how do we handle handover?"}
+  ]
+}
