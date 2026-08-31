@@ -69,6 +69,11 @@ describe("createLiveModelClient", () => {
     const result = await client.nextQuestion({
       idea: "an idea",
       projectName: "P",
+      approved: {
+        statements: [{ id: "st-1", body: "an approved body" }],
+        concerns: [],
+      },
+      context: emptyAdaptiveContext(),
       request,
     });
 
@@ -197,6 +202,8 @@ describe("createLiveModelClient", () => {
       client.nextQuestion({
         idea: "x",
         projectName: "y",
+        approved: { statements: [], concerns: [] },
+        context: emptyAdaptiveContext(),
         request: describeNextQuestionRequest({
           idea: "x",
           projectName: "y",

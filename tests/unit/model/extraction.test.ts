@@ -390,6 +390,13 @@ describe("askAdaptiveQuestion", () => {
       createRecordedModelClient().nextQuestion({
         idea: "an idea",
         projectName: "Sparse",
+        approved: {
+          statements: [
+            { id: "only-one", body: "The only approved statement." },
+          ],
+          concerns: [],
+        },
+        context: emptyAdaptiveContext(),
         request,
       }),
     ).rejects.toThrow(/placeholder with no/);

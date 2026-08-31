@@ -1,6 +1,11 @@
 import type { ModelExecutionProvenance } from "../ledger/schemas";
 import type { ModelUsage } from "./pricing";
-import type { ModelRequestDescription } from "./prompt";
+import type {
+  AdaptiveLedgerContext,
+  ApprovedLedgerSlice,
+  ModelRequestDescription,
+  ResolvedAnswerContext,
+} from "./prompt";
 
 // Every client method resolves to the raw payload plus the usage the provider
 // reported. Non-live clients report null usage; the attempt runner settles
@@ -13,7 +18,10 @@ export type ModelClientResult = {
 // Each call carries the exact request description the orchestrator estimated
 // against; the live client sends that same object, so the estimate covers
 // precisely what goes over the wire. Offline clients use the semantic fields
-// and ignore the description.
+// and ignore the description. Calls whose prompts embed ledger-generated ids
+// also carry the structured builder inputs those ids live in, so the eval
+// capture/replay clients can canonicalize ids schema-aware and re-render
+// through the prompt builders instead of rewriting serialized bytes.
 export type ModelClient = {
   // How this client produces payloads; persisted on every model_calls row.
   executionProvenance: ModelExecutionProvenance;
@@ -25,6 +33,8 @@ export type ModelClient = {
   nextQuestion(input: {
     idea: string;
     projectName: string;
+    approved: ApprovedLedgerSlice;
+    context: AdaptiveLedgerContext;
     request: ModelRequestDescription;
   }): Promise<ModelClientResult>;
   incrementalExtraction(input: {
@@ -33,6 +43,8 @@ export type ModelClient = {
     questionBody: string;
     answerBody: string;
     disposition: string;
+    approved: ApprovedLedgerSlice;
+    resolved: ResolvedAnswerContext;
     request: ModelRequestDescription;
   }): Promise<ModelClientResult>;
   coachRecommendation(input: {

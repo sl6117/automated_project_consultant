@@ -1,32 +1,12 @@
-import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import {
-  briefSchema,
-  labelsSchema,
-  type Brief,
-  type BriefLabels,
-} from "../../../src/eval/corpus-schemas";
+import { loadCorpus } from "../../../src/eval/corpus";
+import { briefSchema, labelsSchema } from "../../../src/eval/corpus-schemas";
 
 const briefsDir = join(process.cwd(), "eval/briefs");
 
-function loadCorpus(): { dir: string; brief: Brief; labels: BriefLabels }[] {
-  return readdirSync(briefsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
-    .map((entry) => {
-      const dir = entry.name;
-      const brief = briefSchema.parse(
-        JSON.parse(readFileSync(join(briefsDir, dir, "brief.json"), "utf8")),
-      );
-      const labels = labelsSchema.parse(
-        JSON.parse(readFileSync(join(briefsDir, dir, "labels.json"), "utf8")),
-      );
-      return { dir, brief, labels };
-    });
-}
-
 describe("evaluation corpus", () => {
-  const corpus = loadCorpus();
+  const corpus = loadCorpus(briefsDir);
 
   test("holds 10-15 briefs that all parse with matching ids and labels", () => {
     expect(corpus.length).toBeGreaterThanOrEqual(10);

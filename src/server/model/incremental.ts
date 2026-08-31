@@ -106,6 +106,8 @@ export async function proposeFromAnswer(
         questionBody: question.body,
         answerBody: answer.body,
         disposition: answer.disposition,
+        approved,
+        resolved,
         request,
       }),
     parse: parseIncrementalExtraction,

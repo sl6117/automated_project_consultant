@@ -206,20 +206,22 @@ export async function askAdaptiveQuestion(
   // gap), tensions already open so the model does not re-raise them under
   // new wording, and resolved questions so it does not ask them again. All
   // dynamic suffix material.
+  const approved = {
+    statements: state.approvedStatements,
+    concerns: state.approvedConcerns,
+  };
+  const adaptiveContext = {
+    missingCoreCodes: CORE_CODES.filter(
+      (code) => !approvedConcernCodes.has(code),
+    ),
+    openContradictions: state.openContradictions,
+    resolvedQuestions: state.resolvedQuestions,
+  };
   const request = describeNextQuestionRequest({
     projectName: context.project_name,
     idea: context.idea,
-    approved: {
-      statements: state.approvedStatements,
-      concerns: state.approvedConcerns,
-    },
-    context: {
-      missingCoreCodes: CORE_CODES.filter(
-        (code) => !approvedConcernCodes.has(code),
-      ),
-      openContradictions: state.openContradictions,
-      resolvedQuestions: state.resolvedQuestions,
-    },
+    approved,
+    context: adaptiveContext,
   });
   const promptSnapshot = JSON.stringify(state);
 
@@ -234,6 +236,8 @@ export async function askAdaptiveQuestion(
       input.client.nextQuestion({
         idea: context.idea,
         projectName: context.project_name,
+        approved,
+        context: adaptiveContext,
         request,
       }),
     parse: (payload) =>

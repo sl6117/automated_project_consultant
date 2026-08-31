@@ -47,6 +47,8 @@ A localhost-only AI project-framing consultant that converts rough ideas into tr
 
 - `src/app/` - Next.js application routes, layouts, and UI.
 - `src/server/` - validated ledger, database, and model-boundary code.
+- `src/eval/` - offline replay, capture, and deterministic scoring harness.
+- `eval/` - committed evaluation corpus; recorded runs and reports join it in later slices.
 - `tests/` - offline unit, contract, fixture, and browser coverage.
 - `docs/specs/` - approved phase contracts and acceptance criteria.
 - `docs/handoffs/` - point-in-time continuation context.
@@ -68,3 +70,4 @@ Add paths to this section only after they actually exist. Documentation must not
 - `npm run typecheck` - run the TypeScript compiler without emitting files.
 - `npm test` - run the offline Vitest suite once.
 - `npm run test:browser` - run the offline Playwright browser suite.
+- `npm run eval` - replay the corpus from recorded transcripts and score it offline (advisory).

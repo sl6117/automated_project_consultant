@@ -32,6 +32,8 @@ describe("resolveModelClient", () => {
     const result = await client.nextQuestion({
       idea: "an idea",
       projectName: "Zed",
+      approved: { statements: [], concerns: [] },
+      context: emptyAdaptiveContext(),
       request: describeNextQuestionRequest({
         idea: "an idea",
         projectName: "Zed",
