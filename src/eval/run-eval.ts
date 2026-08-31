@@ -10,6 +10,7 @@ import { listRuns, loadRun, type LoadedRun } from "./recordings";
 import { replayBriefAgainstRun } from "./replay";
 import { RecordingMissError } from "./replay-client";
 import { scoreBrief, type BriefScore } from "./score";
+import { briefTaxonomyCodes, taxonomyCounts } from "./taxonomy";
 
 // npm run eval — the separate, advisory offline evaluation command. It
 // replays the corpus from recorded transcripts, scores it deterministically,
@@ -85,8 +86,12 @@ export async function runEval(input: {
 
   let failures = 0;
   let totalCost = 0;
-  for (const report of reports) {
-    const verdict = report.score.pass ? "pass" : "FAIL";
+  const codesPerBrief = reports.map((report) =>
+    briefTaxonomyCodes(report.score),
+  );
+  for (const [index, report] of reports.entries()) {
+    const codes = codesPerBrief[index]!;
+    const verdict = report.score.pass ? "pass" : `FAIL [${codes.join(", ")}]`;
     if (!report.score.pass) {
       failures += 1;
     }
@@ -99,6 +104,14 @@ export async function runEval(input: {
         log(`      ${name}: ${dimension.detail}`);
       }
     }
+  }
+  if (failures > 0) {
+    const counts = taxonomyCounts(codesPerBrief.flat());
+    const summary = Object.entries(counts)
+      .filter(([, count]) => count > 0)
+      .map(([code, count]) => `${code}: ${count}`)
+      .join(", ");
+    log(`Failure taxonomy: ${summary}`);
   }
   log(
     `${reports.length - failures}/${reports.length} briefs pass; recorded run cost ${usd(totalCost)} USD (costs and latencies are from the capture pass, not this replay)`,

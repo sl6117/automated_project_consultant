@@ -45,7 +45,16 @@ const usageSchema = z.strictObject({
 // offline reports can state the run's real cost and latency.
 export const recordingEntrySchema = z.strictObject({
   requestHash: z.string().regex(/^[0-9a-f]{64}$/),
-  task: z.enum(["extraction", "incremental", "next-question", "coach"]),
+  task: z.enum([
+    "extraction",
+    "incremental",
+    "next-question",
+    "coach",
+    "judge-faithfulness",
+    "judge-usefulness",
+    "judge-sufficiency",
+    "judge-pairwise",
+  ]),
   modelAlias: z.string().min(1),
   payload: z.unknown(),
   usage: usageSchema.nullable(),
@@ -128,19 +137,36 @@ function serializeEntries(entries: RecordingEntry[]): string {
 }
 
 // Writes one complete run. Every file is scanned before anything is written;
-// a single finding refuses the whole run.
+// a single finding refuses the whole run. Consultant calls land in
+// consultation.jsonl; judge calls (slice 3) in judge.jsonl beside it.
 export function writeRun(
   recordingsDir: string,
   input: {
     manifest: Omit<RunManifest, "files">;
-    briefs: { briefId: string; entries: RecordingEntry[] }[];
+    briefs: {
+      briefId: string;
+      entries: RecordingEntry[];
+      judgeEntries?: RecordingEntry[];
+    }[];
   },
 ): void {
-  const rendered = input.briefs.map((brief) => ({
-    path: `${brief.briefId}/consultation.jsonl`,
-    briefId: brief.briefId,
-    content: serializeEntries(brief.entries),
-  }));
+  const rendered = input.briefs.flatMap((brief) => {
+    const files = [
+      {
+        path: `${brief.briefId}/consultation.jsonl`,
+        briefId: brief.briefId,
+        content: serializeEntries(brief.entries),
+      },
+    ];
+    if (brief.judgeEntries && brief.judgeEntries.length > 0) {
+      files.push({
+        path: `${brief.briefId}/judge.jsonl`,
+        briefId: brief.briefId,
+        content: serializeEntries(brief.judgeEntries),
+      });
+    }
+    return files;
+  });
   for (const file of rendered) {
     assertSanitized(file.content, `Recording ${file.path}`);
   }
@@ -234,7 +260,8 @@ export function loadRun(recordingsDir: string, runId: string): LoadedRun {
     assertSanitized(content, `Recording ${file.path}`);
 
     const briefId = file.path.split("/")[0]!;
-    const entries: RecordingEntry[] = [];
+    const entries: RecordingEntry[] =
+      entriesByBrief.get(briefId) ?? [];
     for (const [index, line] of content.split("\n").entries()) {
       if (line.trim() === "") {
         continue;
