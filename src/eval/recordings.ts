@@ -287,6 +287,86 @@ export function loadRun(recordingsDir: string, runId: string): LoadedRun {
   return { manifest, entriesByHash, entriesByBrief };
 }
 
+// --- Incremental capture support. A capture campaign finalizes each brief
+// --- as it completes (spec: completed briefs are never re-run within a
+// --- pass), so brief files are written one at a time and the manifest is
+// --- produced only when the whole corpus is present. Until the manifest
+// --- exists, loadRun refuses the directory — a partial pass can never be
+// --- loaded or scored.
+
+export function writeBriefRecording(
+  recordingsDir: string,
+  runId: string,
+  briefId: string,
+  files: { consultation: RecordingEntry[]; judge: RecordingEntry[] },
+): void {
+  const briefDir = join(recordingsDir, runId, briefId);
+  const consultation = serializeEntries(files.consultation);
+  assertSanitized(consultation, `Recording ${briefId}/consultation.jsonl`);
+  const judge =
+    files.judge.length > 0 ? serializeEntries(files.judge) : null;
+  if (judge) {
+    assertSanitized(judge, `Recording ${briefId}/judge.jsonl`);
+  }
+  mkdirSync(briefDir, { recursive: true });
+  writeFileSync(join(briefDir, "consultation.jsonl"), consultation, "utf8");
+  if (judge) {
+    writeFileSync(join(briefDir, "judge.jsonl"), judge, "utf8");
+  }
+}
+
+export function briefRecordingExists(
+  recordingsDir: string,
+  runId: string,
+  briefId: string,
+): boolean {
+  try {
+    readFileSync(
+      join(recordingsDir, runId, briefId, "consultation.jsonl"),
+      "utf8",
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Hashes every brief file present on disk into the manifest and writes the
+// detached manifest hash, completing the run.
+export function finalizeRun(
+  recordingsDir: string,
+  manifest: Omit<RunManifest, "files">,
+): void {
+  const runDir = join(recordingsDir, manifest.runId);
+  const files: RunManifest["files"] = [];
+  for (const briefId of manifest.briefIds) {
+    for (const name of ["consultation.jsonl", "judge.jsonl"]) {
+      let content: string;
+      try {
+        content = readFileSync(join(runDir, briefId, name), "utf8");
+      } catch {
+        if (name === "consultation.jsonl") {
+          throw new RecordingIntegrityError(
+            `Cannot finalize run ${manifest.runId}: brief ${briefId} has no consultation recording`,
+          );
+        }
+        continue;
+      }
+      assertSanitized(content, `Recording ${briefId}/${name}`);
+      files.push({ path: `${briefId}/${name}`, sha256: sha256(content) });
+    }
+  }
+  const full: RunManifest = { ...manifest, files };
+  const manifestText = JSON.stringify(full, null, 2) + "\n";
+  assertSanitized(manifestText, "Run manifest");
+  writeFileSync(join(runDir, "manifest.json"), manifestText, "utf8");
+  writeFileSync(
+    join(runDir, "manifest.json.sha256"),
+    sha256(manifestText) + "\n",
+    "utf8",
+  );
+}
+
 export function listRuns(recordingsDir: string): string[] {
   try {
     return readdirSync(recordingsDir, { withFileTypes: true })

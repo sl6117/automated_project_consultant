@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit --pretty false",
     "test": "vitest run",
     "test:browser": "playwright test",
-    "eval": "node --import tsx src/eval/run-eval.ts"
+    "eval": "node --import tsx src/eval/run-eval.ts",
+    "eval:capture": "node --import tsx src/eval/capture-cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.121.0",

@@ -7,6 +7,7 @@ import { briefSchema } from "../../../src/eval/corpus-schemas";
 import { writeRun, type RecordingEntry } from "../../../src/eval/recordings";
 import { replayBrief } from "../../../src/eval/replay";
 import { runEval } from "../../../src/eval/run-eval";
+import { DEFAULT_THRESHOLDS } from "../../../src/eval/thresholds";
 import type { ModelClient } from "../../../src/server/model/client";
 
 // A minimal client whose consultation stops immediately: extraction covers
@@ -105,6 +106,23 @@ afterEach(() => {
   }
 });
 
+function evalPaths(root: string) {
+  mkdirSync(join(root, "reports"), { recursive: true });
+  writeFileSync(
+    join(root, "thresholds.json"),
+    JSON.stringify(DEFAULT_THRESHOLDS),
+    "utf8",
+  );
+  return {
+    briefsDir: join(root, "briefs"),
+    recordingsDir: join(root, "recordings"),
+    calibrationDir: join(root, "calibration"),
+    reportsDir: join(root, "reports"),
+    thresholdsPath: join(root, "thresholds.json"),
+    budgetPath: join(root, "budget.jsonl"),
+  };
+}
+
 async function writeFixture(root: string): Promise<void> {
   const briefDir = join(root, "briefs", brief.id);
   mkdirSync(briefDir, { recursive: true });
@@ -142,8 +160,7 @@ describe("npm run eval command", () => {
 
     const lines: string[] = [];
     const { exitCode } = await runEval({
-      briefsDir: join(root, "briefs"),
-      recordingsDir: join(root, "recordings"),
+      ...evalPaths(root),
       log: (line) => lines.push(line),
     });
 
@@ -152,12 +169,13 @@ describe("npm run eval command", () => {
     expect(lines.join("\n")).toContain("1/1 briefs pass");
     // Cost comes from the recorded usage, not the zero-cost replay.
     expect(lines.join("\n")).toMatch(/0\.00\d+ USD recorded/);
+    // No baseline is designated yet; the comparison is skipped and noted.
+    expect(lines.join("\n")).toContain("baseline comparison skipped");
 
     // Determinism: a second invocation logs byte-identical output.
     const again: string[] = [];
     await runEval({
-      briefsDir: join(root, "briefs"),
-      recordingsDir: join(root, "recordings"),
+      ...evalPaths(root),
       log: (line) => again.push(line),
     });
     expect(again).toStrictEqual(lines);
@@ -169,8 +187,7 @@ describe("npm run eval command", () => {
 
     const lines: string[] = [];
     const { exitCode } = await runEval({
-      briefsDir: join(root, "briefs"),
-      recordingsDir: join(root, "recordings"),
+      ...evalPaths(root),
       log: (line) => lines.push(line),
     });
     expect(exitCode).toBe(1);

@@ -71,3 +71,4 @@ Add paths to this section only after they actually exist. Documentation must not
 - `npm test` - run the offline Vitest suite once.
 - `npm run test:browser` - run the offline Playwright browser suite.
 - `npm run eval` - replay the corpus from recorded transcripts and score it offline (advisory).
+- `npm run eval:capture` - owner-initiated live capture: init-budget, status, and capture <run-id> (requires `LIVE_CAPTURE=yes` and an API key).

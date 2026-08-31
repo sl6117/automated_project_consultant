@@ -1,0 +1,28 @@
+{
+  "baselineReport": null,
+  "minDimensionPassRate": {
+    "extractionCoverage": 0.8,
+    "questionEfficiency": 0.7,
+    "contradictionHandling": 0.8,
+    "stopCorrectness": 0.8,
+    "contractDiscipline": 1
+  },
+  "maxCodeCounts": {
+    "contract-violation": 0,
+    "invented-fact": 0,
+    "premature-stop-offer": 1,
+    "missed-stop": 3,
+    "wrong-citation": 2,
+    "missed-tension": 3,
+    "false-tension": 3,
+    "missed-core-gap": 3,
+    "redundant-question": 4,
+    "overlong-bundled-question": 4
+  },
+  "minJudgedScoreMean": {
+    "faithfulness": 0.95,
+    "usefulness": 3,
+    "sufficiency": 3
+  },
+  "maxPassRateDropVsBaseline": 0.1
+}
