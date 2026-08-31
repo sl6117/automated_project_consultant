@@ -1,1 +1,9 @@
 {"kind":"authorization","at":"2026-08-31T23:08:54.262Z","capMicrocents":1500000000,"note":"Phase 3 live budget authorized by the owner in the approved phase specification ($15)."}
+{"kind":"reservation","id":"cd779ac2-99bc-41c4-ad86-aa7b01516e9e","at":"2026-08-31T23:18:52.652Z","runId":"baseline-2026-09","briefId":"birdsong-logger","role":"consultant","estimateMicrocents":5092800}
+{"kind":"settlement","at":"2026-08-31T23:19:08.567Z","reservationId":"cd779ac2-99bc-41c4-ad86-aa7b01516e9e","outcome":"succeeded","actualMicrocents":1540275}
+{"kind":"reservation","id":"0a2dbc9a-0d00-47f6-a823-28021288a4ef","at":"2026-08-31T23:19:08.583Z","runId":"baseline-2026-09","briefId":"birdsong-logger","role":"consultant","estimateMicrocents":21191000}
+{"kind":"settlement","at":"2026-08-31T23:19:08.861Z","reservationId":"0a2dbc9a-0d00-47f6-a823-28021288a4ef","outcome":"transport_failed"}
+{"kind":"reservation","id":"2485b1d4-6722-4eec-b4d8-a57acf059d03","at":"2026-08-31T23:19:08.875Z","runId":"baseline-2026-09","briefId":"birdsong-logger","role":"consultant","estimateMicrocents":5092800}
+{"kind":"settlement","at":"2026-08-31T23:19:21.582Z","reservationId":"2485b1d4-6722-4eec-b4d8-a57acf059d03","outcome":"succeeded","actualMicrocents":847830}
+{"kind":"reservation","id":"aac8caef-4390-4954-b500-dfaaa965a0a3","at":"2026-08-31T23:19:21.604Z","runId":"baseline-2026-09","briefId":"birdsong-logger","role":"consultant","estimateMicrocents":21602000}
+{"kind":"settlement","at":"2026-08-31T23:19:21.847Z","reservationId":"aac8caef-4390-4954-b500-dfaaa965a0a3","outcome":"transport_failed"}
