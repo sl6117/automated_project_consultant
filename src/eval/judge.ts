@@ -123,9 +123,11 @@ const pairwiseJsonSchema = {
     required: ["picks"],
     properties: {
       picks: {
+        // No maxItems: the provider's structured-output validator rejects it
+        // (evidenced live, 2026-08-31). Exactly-three is enforced by the Zod
+        // gate (.length(3)) and the exactly-once-per-dimension check.
         type: "array",
         minItems: 3,
-        maxItems: 3,
         items: {
           type: "object",
           additionalProperties: false,

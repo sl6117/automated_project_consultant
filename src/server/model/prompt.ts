@@ -134,9 +134,11 @@ const nextQuestionPayloadJsonSchema = {
   required: ["candidates", "contradictions", "readyAdvice"],
   properties: {
     candidates: {
+      // The provider's structured-output validator rejects maxItems
+      // (evidenced live, 2026-08-31): the one-to-five ceiling is stated in
+      // the prompt contract text and enforced by the Zod gate (.max(5)).
       type: "array",
       minItems: 1,
-      maxItems: 5,
       items: {
         type: "object",
         additionalProperties: false,
