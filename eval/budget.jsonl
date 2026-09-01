@@ -31,3 +31,7 @@
 {"kind":"settlement","at":"2026-09-01T01:27:10.695Z","reservationId":"ce696a63-8e00-4f11-8807-7e24e8663d96","outcome":"succeeded","actualMicrocents":594480}
 {"kind":"reservation","id":"41c2e56e-5ee9-4b77-ac13-0044fd4338b3","at":"2026-09-01T01:27:10.706Z","runId":"baseline-2026-09","briefId":"birdsong-logger","role":"consultant","estimateMicrocents":22097000}
 {"kind":"settlement","at":"2026-09-01T01:27:33.447Z","reservationId":"41c2e56e-5ee9-4b77-ac13-0044fd4338b3","outcome":"succeeded","actualMicrocents":9411000}
+{"kind":"reservation","id":"b59f033f-c160-4ca0-b059-3dffe51d2829","at":"2026-09-01T01:45:38.115Z","runId":"baseline-2026-09","briefId":"birdsong-logger","role":"consultant","estimateMicrocents":5084400}
+{"kind":"settlement","at":"2026-09-01T01:45:52.322Z","reservationId":"b59f033f-c160-4ca0-b059-3dffe51d2829","outcome":"succeeded","actualMicrocents":1496775}
+{"kind":"reservation","id":"99252f19-6249-460a-b606-4468b2a13421","at":"2026-09-01T01:45:52.345Z","runId":"baseline-2026-09","briefId":"birdsong-logger","role":"consultant","estimateMicrocents":5084400}
+{"kind":"settlement","at":"2026-09-01T01:46:04.201Z","reservationId":"99252f19-6249-460a-b606-4468b2a13421","outcome":"succeeded","actualMicrocents":808350}
