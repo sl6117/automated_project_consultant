@@ -8,7 +8,8 @@ import {
   parseSufficiency,
   parseUsefulness,
 } from "./judge";
-import type { JudgeClient } from "./judge-client";
+import { appendDiagnostics } from "../server/model/response-diagnostics";
+import type { JudgeClient, JudgeClientResult } from "./judge-client";
 import type { ReplayTranscript } from "./replay";
 
 // Runs the three judged dimensions over one brief's transcript. Usefulness is
@@ -18,6 +19,21 @@ import type { ReplayTranscript } from "./replay";
 // passes its validation gate before it is used; a validation failure
 // propagates and the brief's judged scores are discarded whole, never
 // partially applied.
+
+// Judge calls run outside the attempt runner, so the diagnostics enrichment
+// happens here: a billed judge response that fails its Zod gate states its
+// own cause (truncation, refusal, string root) in the thrown error.
+function parseWithDiagnostics<T>(
+  result: JudgeClientResult,
+  parse: (payload: unknown) => T,
+): T {
+  try {
+    return parse(result.payload);
+  } catch (error) {
+    appendDiagnostics(error, result.diagnostics);
+    throw error;
+  }
+}
 
 export async function judgeTranscript(input: {
   brief: Brief;
@@ -32,7 +48,9 @@ export async function judgeTranscript(input: {
   if (statementCount > 0) {
     const request = describeFaithfulnessRequest({ brief, transcript });
     const result = await client.judge({ task: "judge-faithfulness", request });
-    const parsed = parseFaithfulness(result.payload, { statementCount });
+    const parsed = parseWithDiagnostics(result, (payload) =>
+      parseFaithfulness(payload, { statementCount }),
+    );
     inventedStatementIndexes = parsed.verdicts
       .filter((verdict) => verdict.verdict === "invented")
       .map((verdict) => verdict.index)
@@ -53,7 +71,7 @@ export async function judgeTranscript(input: {
       turn: ranking.turn,
     });
     const result = await client.judge({ task: "judge-usefulness", request });
-    const parsed = parseUsefulness(result.payload);
+    const parsed = parseWithDiagnostics(result, parseUsefulness);
     usefulnessByTurn.push({
       turn: ranking.turn,
       score: parsed.score,
@@ -66,7 +84,7 @@ export async function judgeTranscript(input: {
     task: "judge-sufficiency",
     request: sufficiencyRequest,
   });
-  const sufficiency = parseSufficiency(sufficiencyResult.payload);
+  const sufficiency = parseWithDiagnostics(sufficiencyResult, parseSufficiency);
 
   return {
     briefId: brief.id,

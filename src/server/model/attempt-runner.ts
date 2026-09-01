@@ -11,6 +11,7 @@ import {
   estimateRequestCostMicrocents,
 } from "./pricing";
 import type { ModelRequestDescription } from "./prompt";
+import { appendDiagnostics } from "./response-diagnostics";
 import type { ModelExecutionProvenance } from "../ledger/schemas";
 import { assertNoOpenTransaction } from "./transaction-guard";
 
@@ -96,6 +97,10 @@ export async function runModelAttempt<T>(input: {
       cacheWrite5mTokens: usage?.cacheWrite5mTokens,
       cacheWrite1hTokens: usage?.cacheWrite1hTokens,
     });
+    // A billed response that fails validation states its own cause —
+    // truncation, refusal, string root, malformed JSON — when the client
+    // supplied response diagnostics. The error's class is preserved.
+    appendDiagnostics(error, result.diagnostics);
     throw error;
   }
 

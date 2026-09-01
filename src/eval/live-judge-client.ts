@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { buildDiagnostics } from "../server/model/response-diagnostics";
 import type { JudgeClient } from "./judge-client";
 
 // Live Sonnet judge, mirroring the consultant live client: the request
@@ -19,6 +20,7 @@ type SdkUsage = {
 
 type SdkResponse = {
   content?: { type?: string; text?: string }[];
+  stop_reason?: string | null;
   usage?: SdkUsage;
 };
 
@@ -50,10 +52,12 @@ export function createLiveJudgeClient(
         .map((block) => block.text)
         .join("");
       let payload: unknown;
+      let parsedAsJson = true;
       try {
         payload = JSON.parse(text) as unknown;
       } catch {
         payload = text;
+        parsedAsJson = false;
       }
       const write5m =
         response.usage?.cache_creation?.ephemeral_5m_input_tokens ??
@@ -69,6 +73,12 @@ export function createLiveJudgeClient(
           cacheWrite1hTokens:
             response.usage?.cache_creation?.ephemeral_1h_input_tokens ?? 0,
         },
+        diagnostics: buildDiagnostics(
+          text,
+          response.stop_reason,
+          parsedAsJson,
+          payload,
+        ),
       };
     },
   };

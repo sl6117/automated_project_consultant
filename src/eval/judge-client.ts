@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { ModelUsage } from "../server/model/pricing";
+import type { ResponseDiagnostics } from "../server/model/response-diagnostics";
 import type { JudgeRequestDescription } from "./judge";
 import type { LoadedRun, RecordingEntry } from "./recordings";
 
@@ -18,6 +19,9 @@ export type JudgeTask =
 export type JudgeClientResult = {
   payload: unknown;
   usage: ModelUsage | null;
+  // Live clients attach stop_reason and parse status so validation failures
+  // can state their own cause (see response-diagnostics.ts).
+  diagnostics?: ResponseDiagnostics;
 };
 
 export type JudgeClient = {

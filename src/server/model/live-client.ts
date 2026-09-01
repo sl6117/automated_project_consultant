@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ModelClient, ModelClientResult } from "./client";
+import { buildDiagnostics } from "./response-diagnostics";
 import type { ModelUsage } from "./pricing";
 import type { ModelRequestDescription } from "./prompt";
 
@@ -25,6 +26,7 @@ type SdkUsage = {
 
 type SdkResponse = {
   content?: { type?: string; text?: string }[];
+  stop_reason?: string | null;
   usage?: SdkUsage;
 };
 
@@ -45,9 +47,16 @@ export function createLiveModelClient(
     request: ModelRequestDescription,
   ): Promise<ModelClientResult> {
     const response = (await sdk.messages.create(request)) as SdkResponse;
+    const { payload, text, parsedAsJson } = extractJsonPayload(response);
     return {
-      payload: extractJsonPayload(response),
+      payload,
       usage: mapUsage(response.usage),
+      diagnostics: buildDiagnostics(
+        text,
+        response.stop_reason,
+        parsedAsJson,
+        payload,
+      ),
     };
   }
 
@@ -70,16 +79,20 @@ export function createLiveModelClient(
 
 // The payload stays `unknown`: downstream Zod boundaries decide validity, and
 // unparseable text is returned as-is so validation fails loudly rather than
-// silently here.
-function extractJsonPayload(response: SdkResponse): unknown {
+// silently here — with the parse status preserved for the diagnostics.
+function extractJsonPayload(response: SdkResponse): {
+  payload: unknown;
+  text: string;
+  parsedAsJson: boolean;
+} {
   const text = (response.content ?? [])
     .filter((block) => block.type === "text" && typeof block.text === "string")
     .map((block) => block.text)
     .join("");
   try {
-    return JSON.parse(text) as unknown;
+    return { payload: JSON.parse(text) as unknown, text, parsedAsJson: true };
   } catch {
-    return text;
+    return { payload: text, text, parsedAsJson: false };
   }
 }
 

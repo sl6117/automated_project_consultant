@@ -1,5 +1,6 @@
 import type { ModelExecutionProvenance } from "../ledger/schemas";
 import type { ModelUsage } from "./pricing";
+import type { ResponseDiagnostics } from "./response-diagnostics";
 import type {
   AdaptiveLedgerContext,
   ApprovedLedgerSlice,
@@ -9,10 +10,13 @@ import type {
 
 // Every client method resolves to the raw payload plus the usage the provider
 // reported. Non-live clients report null usage; the attempt runner settles
-// their spend as zero.
+// their spend as zero. Live clients also attach response diagnostics
+// (stop_reason, parse status) so a payload that later fails validation can
+// state its own cause — truncation, refusal, or malformed output.
 export type ModelClientResult = {
   payload: unknown;
   usage: ModelUsage | null;
+  diagnostics?: ResponseDiagnostics;
 };
 
 // Each call carries the exact request description the orchestrator estimated
