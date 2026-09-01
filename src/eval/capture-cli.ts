@@ -66,9 +66,33 @@ export async function main(): Promise<void> {
 
   if (command === "capture") {
     if (!argument) {
-      console.error("Usage: capture <run-id>");
+      console.error(
+        "Usage: capture <run-id> [--consultant-cap <briefId>=<microcents>]...",
+      );
       process.exitCode = 2;
       return;
+    }
+    // Owner-approved per-brief consultant cap overrides, stated explicitly
+    // per invocation; the aggregate phase cap is never overridable.
+    const consultantCapOverrides: Record<string, number> = {};
+    const rest = process.argv.slice(4);
+    for (let index = 0; index < rest.length; index += 1) {
+      if (rest[index] !== "--consultant-cap") {
+        console.error(`Unknown argument: ${rest[index]}`);
+        process.exitCode = 2;
+        return;
+      }
+      const assignment = rest[index + 1] ?? "";
+      const match = assignment.match(/^([a-z0-9-]+)=(\d+)$/);
+      if (!match) {
+        console.error(
+          `--consultant-cap needs <briefId>=<microcents>, got "${assignment}"`,
+        );
+        process.exitCode = 2;
+        return;
+      }
+      consultantCapOverrides[match[1]!] = Number(match[2]);
+      index += 1;
     }
     if (process.env.LIVE_CAPTURE !== "yes") {
       console.error(
@@ -99,6 +123,7 @@ export async function main(): Promise<void> {
       promptVersionNote: `prompts as of commit ${gitCommit()}`,
       perBriefConsultantCapMicrocents: PER_BRIEF_CONSULTANT_CAP_MICROCENTS,
       perBriefJudgeCapMicrocents: PER_BRIEF_JUDGE_CAP_MICROCENTS,
+      consultantCapOverrides,
       log: (line) => console.log(line),
     });
     console.log(

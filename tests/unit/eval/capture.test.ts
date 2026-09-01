@@ -3,7 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import type { ModelClient } from "../../../src/server/model/client";
-import { initializeBudget, readBudget } from "../../../src/eval/budget";
+import {
+  initializeBudget,
+  readBudget,
+  reserveSpend,
+  settleSpend,
+} from "../../../src/eval/budget";
 import { runCaptureCampaign } from "../../../src/eval/capture";
 import type { JudgeClient } from "../../../src/eval/judge-client";
 import { loadRun } from "../../../src/eval/recordings";
@@ -283,6 +288,153 @@ describe("capture campaign", () => {
     ).toBe(false);
     // The halt stops the whole pass: beta was never attempted.
     expect(result.completedBriefIds).toEqual([]);
+  });
+
+  test("a mid-flight per-brief cap refusal is never retried", async () => {
+    const root = tempRoot();
+    writeBrief(root, "alpha");
+    initializeBudget(join(root, "budget.jsonl"), {
+      capMicrocents: 1_500_000_000,
+      note: "test",
+    });
+    // A consultant that needs a second ask: extraction covers three core
+    // codes, the first ask covers success via the incremental pass, the
+    // second ask meets the ready offer. Heavy usage makes settled actuals
+    // comparable to estimates so the cap trips mid-flight (the first ask
+    // settles ~20.5M microcents at Fable prices), while the opening
+    // estimates still pass preflight under the 30M cap.
+    const heavyUsage = { ...usage, inputTokens: 20_000 };
+    let extractionCalls = 0;
+    const twoTurn: ModelClient = {
+      executionProvenance: "synthetic",
+      async extractFromIdea(input) {
+        extractionCalls += 1;
+        return {
+          payload: {
+            statements: [
+              { kind: "fact", body: `Project ${input.projectName}.` },
+            ],
+            concerns: [
+              { code: "problem", coverage: "p" },
+              { code: "user", coverage: "u" },
+              { code: "workflow", coverage: "w" },
+            ],
+          },
+          usage: heavyUsage,
+        };
+      },
+      async incrementalExtraction() {
+        return {
+          payload: {
+            statements: [],
+            concerns: [{ code: "success", coverage: "s" }],
+          },
+          usage: heavyUsage,
+        };
+      },
+      async nextQuestion(input) {
+        return {
+          payload: {
+            task: "next_question",
+            payload: {
+              candidates: [
+                {
+                  body:
+                    input.context.missingCoreCodes.length > 0
+                      ? "What does success look like?"
+                      : "Anything else?",
+                  whySelected: "w",
+                  concernCodes:
+                    input.context.missingCoreCodes.length > 0
+                      ? ["success"]
+                      : ["quality"],
+                  claimedScores: {
+                    coreGap: 0,
+                    sliceBounding: 0,
+                    contradictionResolution: 0,
+                  },
+                  targetsContradictionIndexes: [],
+                },
+              ],
+              contradictions: [],
+              readyAdvice: { ready: false, why: "w" },
+            },
+          },
+          usage: heavyUsage,
+        };
+      },
+      async coachRecommendation() {
+        throw new Error("never called");
+      },
+    };
+
+    // Cap admits the opening two estimates (preflight passes) but not the
+    // third call, so the refusal happens mid-flight.
+    const lines: string[] = [];
+    const result = await runCaptureCampaign(
+      campaignInput(root, {
+        consultant: twoTurn,
+        perBriefConsultantCapMicrocents: 30_000_000,
+        log: (line: string) => lines.push(line),
+      }),
+    );
+    expect(result.completedBriefIds).toEqual([]);
+    expect(result.incompleteBriefIds).toEqual(["alpha"]);
+    // Not retried: exactly one attempt, so exactly one extraction spend.
+    expect(extractionCalls).toBe(1);
+    expect(result.halted).toBeNull();
+    expect(lines.join("\n")).toContain("not retryable");
+  });
+
+  test("preflight refuses a brief whose committed spend leaves no room for the opening calls", async () => {
+    const root = tempRoot();
+    writeBrief(root, "alpha");
+    const budgetPath = join(root, "budget.jsonl");
+    initializeBudget(budgetPath, {
+      capMicrocents: 1_500_000_000,
+      note: "test",
+    });
+    // Simulate earlier failed windows: commit spend near the cap.
+    const reservation = reserveSpend(budgetPath, {
+      runId: "run-one",
+      briefId: "alpha",
+      role: "consultant",
+      estimateMicrocents: 140_000_000,
+    });
+    settleSpend(budgetPath, {
+      reservationId: reservation,
+      outcome: "succeeded",
+      actualMicrocents: 140_000_000,
+    });
+
+    let calls = 0;
+    const counting: ModelClient = {
+      ...instantConsultant(),
+      async extractFromIdea(input) {
+        calls += 1;
+        return instantConsultant().extractFromIdea(input);
+      },
+    };
+    const lines: string[] = [];
+    const result = await runCaptureCampaign(
+      campaignInput(root, {
+        consultant: counting,
+        log: (line: string) => lines.push(line),
+      }),
+    );
+    expect(result.incompleteBriefIds).toEqual(["alpha"]);
+    // Refused BEFORE any call: zero spend on the doomed attempt.
+    expect(calls).toBe(0);
+    expect(lines.join("\n")).toContain("cap override is required");
+
+    // An owner-approved override lets the same brief proceed.
+    const overridden = await runCaptureCampaign(
+      campaignInput(root, {
+        consultantCapOverrides: { alpha: 300_000_000 },
+      }),
+    );
+    expect(overridden.completedBriefIds).toEqual(["alpha"]);
+    expect(overridden.finalized).toBe(true);
   });
 
   test("a brief is refused when the per-brief caps no longer fit the remaining budget", async () => {

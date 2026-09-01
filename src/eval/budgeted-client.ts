@@ -37,7 +37,18 @@ type BudgetScope = {
   perBriefCapMicrocents: number;
 };
 
-function createSpendGuard(scope: BudgetScope, role: "consultant" | "judge") {
+// Budget refusals are deterministic, never transient: retrying one re-runs
+// the calls before it (real spend) only to hit the same arithmetic. The
+// attempt runner wraps invoke errors as transport failures, destroying the
+// class, so refusals are ALSO recorded on this side channel for the
+// campaign to check — a non-empty list means stop, not retry.
+export type BudgetRefusal = PerBriefCapError | BudgetExceededError;
+
+function createSpendGuard(
+  scope: BudgetScope,
+  role: "consultant" | "judge",
+  refusals: BudgetRefusal[],
+) {
   return async function guarded(
     alias: ModelAlias,
     estimateMicrocents: number,
@@ -53,16 +64,26 @@ function createSpendGuard(scope: BudgetScope, role: "consultant" | "judge") {
       role,
     );
     if (committed + estimateMicrocents > scope.perBriefCapMicrocents) {
-      throw new PerBriefCapError(
+      const refusal = new PerBriefCapError(
         `Brief ${scope.briefId}: ${committed} microcents already committed; reserving ${estimateMicrocents} more would exceed the per-brief ${role} cap of ${scope.perBriefCapMicrocents}`,
       );
+      refusals.push(refusal);
+      throw refusal;
     }
-    const reservationId = reserveSpend(scope.budgetPath, {
-      runId: scope.runId,
-      briefId: scope.briefId,
-      role,
-      estimateMicrocents,
-    });
+    let reservationId: string;
+    try {
+      reservationId = reserveSpend(scope.budgetPath, {
+        runId: scope.runId,
+        briefId: scope.briefId,
+        role,
+        estimateMicrocents,
+      });
+    } catch (error) {
+      if (error instanceof BudgetExceededError) {
+        refusals.push(error);
+      }
+      throw error;
+    }
     let result: ModelClientResult;
     try {
       result = await invoke();
@@ -95,11 +116,16 @@ function createSpendGuard(scope: BudgetScope, role: "consultant" | "judge") {
   };
 }
 
+export type BudgetedModelClient = ModelClient & {
+  budgetRefusals: BudgetRefusal[];
+};
+
 export function createBudgetedModelClient(
   inner: ModelClient,
   scope: BudgetScope,
-): ModelClient {
-  const guarded = createSpendGuard(scope, "consultant");
+): BudgetedModelClient {
+  const budgetRefusals: BudgetRefusal[] = [];
+  const guarded = createSpendGuard(scope, "consultant", budgetRefusals);
 
   function run(
     alias: ModelAlias,
@@ -110,6 +136,7 @@ export function createBudgetedModelClient(
   }
 
   return {
+    budgetRefusals,
     executionProvenance: inner.executionProvenance,
     extractFromIdea(input) {
       return run("sonnet", input.request, () => inner.extractFromIdea(input));
@@ -130,12 +157,18 @@ export function createBudgetedModelClient(
   };
 }
 
+export type BudgetedJudgeClient = JudgeClient & {
+  budgetRefusals: BudgetRefusal[];
+};
+
 export function createBudgetedJudgeClient(
   inner: JudgeClient,
   scope: BudgetScope,
-): JudgeClient {
-  const guarded = createSpendGuard(scope, "judge");
+): BudgetedJudgeClient {
+  const budgetRefusals: BudgetRefusal[] = [];
+  const guarded = createSpendGuard(scope, "judge", budgetRefusals);
   return {
+    budgetRefusals,
     executionProvenance: inner.executionProvenance,
     judge(input) {
       // Judge requests are plain serializable descriptions; the byte-length

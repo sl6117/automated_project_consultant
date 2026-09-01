@@ -1,10 +1,17 @@
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ModelClient } from "../server/model/client";
-import { readBudget } from "./budget";
+import { estimateRequestCostMicrocents } from "../server/model/pricing";
+import {
+  describeExtractionRequest,
+  describeNextQuestionRequest,
+} from "../server/model/prompt";
+import { briefCommittedMicrocents, readBudget } from "./budget";
 import {
   createBudgetedJudgeClient,
   createBudgetedModelClient,
+  type BudgetedJudgeClient,
+  type BudgetedModelClient,
 } from "./budgeted-client";
 import { createCapturingModelClient } from "./capture-client";
 import { loadCorpus } from "./corpus";
@@ -57,6 +64,10 @@ export async function runCaptureCampaign(input: {
   promptVersionNote: string;
   perBriefConsultantCapMicrocents: number;
   perBriefJudgeCapMicrocents: number;
+  // Owner-approved per-brief consultant cap overrides (microcents), for a
+  // brief whose accumulated failed-window spend needs headroom beyond the
+  // default. The aggregate phase cap is never overridden.
+  consultantCapOverrides?: Record<string, number>;
   log: (line: string) => void;
 }): Promise<CaptureResult> {
   const { log } = input;
@@ -80,10 +91,13 @@ export async function runCaptureCampaign(input: {
       continue;
     }
 
-    const remaining = readBudget(input.budgetPath).remainingMicrocents;
-    const needed =
-      input.perBriefConsultantCapMicrocents +
-      input.perBriefJudgeCapMicrocents;
+    const consultantCap =
+      input.consultantCapOverrides?.[brief.id] ??
+      input.perBriefConsultantCapMicrocents;
+
+    const budgetState = readBudget(input.budgetPath);
+    const remaining = budgetState.remainingMicrocents;
+    const needed = consultantCap + input.perBriefJudgeCapMicrocents;
     if (remaining < needed) {
       incomplete.push(brief.id);
       log(
@@ -92,22 +106,64 @@ export async function runCaptureCampaign(input: {
       continue;
     }
 
+    // Preflight: an attempt must not BEGIN unless the brief's cap headroom
+    // covers at least its opening calls (extraction plus the first ask,
+    // estimated with an empty ledger — a floor, since context only grows).
+    // Without this, a brief near its cap spends a real extraction only to
+    // hit the deterministic refusal on the very next call.
+    const committed = briefCommittedMicrocents(
+      budgetState,
+      input.runId,
+      brief.id,
+      "consultant",
+    );
+    const openingEstimate =
+      estimateRequestCostMicrocents(
+        "sonnet",
+        describeExtractionRequest({
+          projectName: brief.projectName,
+          idea: brief.idea,
+        }),
+      ) +
+      estimateRequestCostMicrocents(
+        "fable",
+        describeNextQuestionRequest({
+          projectName: brief.projectName,
+          idea: brief.idea,
+          approved: { statements: [], concerns: [] },
+          context: {
+            missingCoreCodes: [],
+            openContradictions: [],
+            resolvedQuestions: [],
+          },
+        }),
+      );
+    if (committed + openingEstimate > consultantCap) {
+      incomplete.push(brief.id);
+      log(
+        `refuse ${brief.id}: ${committed} microcents already committed against its ${consultantCap} consultant cap; the opening calls need ~${openingEstimate} more. Owner approval of a per-brief cap override is required to continue this brief.`,
+      );
+      continue;
+    }
+
     let succeeded = false;
+    let budgetRefused = false;
     for (let attempt = 1; attempt <= 2 && !succeeded; attempt += 1) {
       const consultationEntries: RecordingEntry[] = [];
       const judgeEntries: RecordingEntry[] = [];
+      const consultantClient: BudgetedModelClient = createBudgetedModelClient(
+        createCapturingModelClient(input.consultant, {
+          record: (entry) => consultationEntries.push(entry),
+        }),
+        {
+          budgetPath: input.budgetPath,
+          runId: input.runId,
+          briefId: brief.id,
+          perBriefCapMicrocents: consultantCap,
+        },
+      );
+      let judgeClient: BudgetedJudgeClient | null = null;
       try {
-        const consultantClient = createBudgetedModelClient(
-          createCapturingModelClient(input.consultant, {
-            record: (entry) => consultationEntries.push(entry),
-          }),
-          {
-            budgetPath: input.budgetPath,
-            runId: input.runId,
-            briefId: brief.id,
-            perBriefCapMicrocents: input.perBriefConsultantCapMicrocents,
-          },
-        );
         const transcript = await replayBrief({
           brief,
           client: consultantClient,
@@ -121,7 +177,7 @@ export async function runCaptureCampaign(input: {
           );
         }
 
-        const judgeClient = createBudgetedJudgeClient(
+        judgeClient = createBudgetedJudgeClient(
           createCapturingJudgeClient(input.judge, {
             record: (entry) => judgeEntries.push(entry),
           }),
@@ -157,10 +213,28 @@ export async function runCaptureCampaign(input: {
         log(
           `fail ${brief.id} attempt ${attempt}: ${error instanceof Error ? error.message : String(error)}`,
         );
+        // A budget refusal is deterministic arithmetic, never transient:
+        // retrying would re-spend the calls before it only to hit the same
+        // cap. Stop this brief immediately and leave it incomplete.
+        const refusals = [
+          ...consultantClient.budgetRefusals,
+          ...(judgeClient?.budgetRefusals ?? []),
+        ];
+        if (refusals.length > 0) {
+          budgetRefused = true;
+          log(
+            `budget refusal on ${brief.id} — not retryable: ${refusals[0]!.message}`,
+          );
+          break;
+        }
         if (attempt === 2) {
           halted = brief.id;
         }
       }
+    }
+    if (budgetRefused) {
+      incomplete.push(brief.id);
+      continue;
     }
     if (halted) {
       incomplete.push(brief.id);
