@@ -302,7 +302,7 @@ describe("capture campaign", () => {
     // second ask meets the ready offer. Heavy usage makes settled actuals
     // comparable to estimates so the cap trips mid-flight (the first ask
     // settles ~20.5M microcents at Fable prices), while the opening
-    // estimates still pass preflight under the 30M cap.
+    // estimates still pass preflight under the 40M cap.
     const heavyUsage = { ...usage, inputTokens: 20_000 };
     let extractionCalls = 0;
     const twoTurn: ModelClient = {
@@ -368,13 +368,15 @@ describe("capture campaign", () => {
       },
     };
 
-    // Cap admits the opening two estimates (preflight passes) but not the
-    // third call, so the refusal happens mid-flight.
+    // The 40M cap admits the opening estimates (~30M with the 3,000-token
+    // next-question ceiling) and the first turn's calls (~27M committed
+    // after the first ask settles), but not the second ask's ~29M estimate,
+    // so the refusal happens mid-flight.
     const lines: string[] = [];
     const result = await runCaptureCampaign(
       campaignInput(root, {
         consultant: twoTurn,
-        perBriefConsultantCapMicrocents: 30_000_000,
+        perBriefConsultantCapMicrocents: 40_000_000,
         log: (line: string) => lines.push(line),
       }),
     );

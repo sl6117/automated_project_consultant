@@ -368,6 +368,15 @@ export function buildIncrementalExtractionUserMessage(input: {
 
 export const MAX_OUTPUT_TOKENS = 1_500;
 
+// Next-question is the most output-hungry contract — up to five candidates
+// with reasons, contradictions, and readiness advice — and 1,500 tokens
+// truncated real responses (stop_reason=max_tokens, evidenced live
+// 2026-09-01 across two windows). Only this task gets the higher ceiling;
+// extraction, incremental, and coaching keep MAX_OUTPUT_TOKENS. Cost
+// estimates derive from the request's own max_tokens, so the reservation
+// bound grows with it automatically.
+export const NEXT_QUESTION_MAX_OUTPUT_TOKENS = 3_000;
+
 export function describeExtractionRequest(input: {
   projectName: string;
   idea: string;
@@ -414,7 +423,7 @@ export function describeNextQuestionRequest(input: {
 }): ModelRequestDescription {
   return {
     model: modelCatalog.fable.apiId,
-    max_tokens: MAX_OUTPUT_TOKENS,
+    max_tokens: NEXT_QUESTION_MAX_OUTPUT_TOKENS,
     system: buildSystemPrefix(),
     messages: [{ role: "user", content: buildNextQuestionUserMessage(input) }],
     output_config: { format: fableOutputFormat },
