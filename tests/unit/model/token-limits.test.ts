@@ -55,6 +55,40 @@ describe("per-task output token limits", () => {
     ).toBe(MAX_OUTPUT_TOKENS);
   });
 
+  test("only next-question requests carry medium output effort", () => {
+    const nextQuestion = describeNextQuestionRequest({
+      projectName: "P",
+      idea: "i",
+      approved,
+      context,
+    });
+    expect(nextQuestion.output_config.effort).toBe("medium");
+    // Effort is part of the serialized request, so it participates in every
+    // recording hash like any other byte.
+    expect(JSON.stringify(nextQuestion)).toContain('"effort":"medium"');
+    expect(
+      describeExtractionRequest({ projectName: "P", idea: "i" }).output_config
+        .effort,
+    ).toBeUndefined();
+    expect(
+      describeIncrementalExtractionRequest({
+        projectName: "P",
+        idea: "i",
+        approved,
+        resolved: { questionBody: "q", answerBody: "a", disposition: "answered" },
+      }).output_config.effort,
+    ).toBeUndefined();
+    expect(
+      describeCoachRequest({
+        projectName: "P",
+        idea: "i",
+        questionBody: "q",
+        approvedStatements: [],
+        approvedConcerns: [],
+      }).output_config.effort,
+    ).toBeUndefined();
+  });
+
   test("the cost estimate derives from the request's own max_tokens", () => {
     const request = describeNextQuestionRequest({
       projectName: "P",

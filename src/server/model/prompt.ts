@@ -308,6 +308,11 @@ export type ModelRequestDescription = {
       | typeof extractionOutputFormat
       | typeof incrementalExtractionOutputFormat
       | typeof fableOutputFormat;
+    // Provider-side reasoning effort for the structured response. Set only
+    // where a task's contract warrants it (next-question); absent means the
+    // provider default. Participates in request bytes, so it is part of
+    // every recording hash like any other request field.
+    effort?: "low" | "medium" | "high";
   };
 };
 
@@ -426,7 +431,13 @@ export function describeNextQuestionRequest(input: {
     max_tokens: NEXT_QUESTION_MAX_OUTPUT_TOKENS,
     system: buildSystemPrefix(),
     messages: [{ role: "user", content: buildNextQuestionUserMessage(input) }],
-    output_config: { format: fableOutputFormat },
+    // effort: medium bounds the reasoning spent on the structured response.
+    // Note the trade-off this accepts: coach shares fableOutputFormat
+    // precisely so both Fable tasks carry byte-identical output_config for
+    // the prompt cache; effort on next-question alone re-splits them, so a
+    // next-question -> coach switch costs one cache write. Coaching is
+    // user-triggered and rare, and eval replay never calls it.
+    output_config: { format: fableOutputFormat, effort: "medium" },
   };
 }
 

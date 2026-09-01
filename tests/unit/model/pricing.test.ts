@@ -107,7 +107,7 @@ describe("estimateRequestCostMicrocents", () => {
     expect(emoji).toBeGreaterThan(ascii);
   });
 
-  test("both Fable tasks serialize an identical shared output_config", () => {
+  test("both Fable tasks share one format; next-question alone adds effort", () => {
     const question = describeNextQuestionRequest({
       idea: "one household inbox",
       projectName: "P",
@@ -122,12 +122,14 @@ describe("estimateRequestCostMicrocents", () => {
       approvedConcerns: [],
     });
 
-    // Byte-identical output_config: a per-task schema would invalidate the
-    // prompt cache on every task switch.
-    expect(JSON.stringify(coach.output_config)).toBe(
-      JSON.stringify(question.output_config),
-    );
+    // The FORMAT object stays shared by reference — a per-task schema would
+    // still thrash the prompt cache. The owner-directed effort field
+    // (2026-09-01) applies to next-question only, deliberately accepting
+    // one cache write on a next-question -> coach switch; coaching is
+    // user-triggered and rare, and eval replay never calls it.
     expect(coach.output_config.format).toBe(question.output_config.format);
+    expect(question.output_config.effort).toBe("medium");
+    expect(coach.output_config.effort).toBeUndefined();
     // The extraction task keeps its own format.
     expect(
       JSON.stringify(
