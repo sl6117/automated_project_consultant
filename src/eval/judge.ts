@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { modelCatalog } from "../server/model/config";
+import { toWireSchema } from "../server/model/wire-schema";
 import type { Brief } from "./corpus-schemas";
 import type { ReplayTranscript } from "./replay";
 
@@ -77,9 +78,12 @@ export type UsefulnessOutput = z.infer<typeof usefulnessOutputSchema>;
 export type SufficiencyOutput = z.infer<typeof sufficiencyOutputSchema>;
 export type PairwiseOutput = z.infer<typeof pairwiseOutputSchema>;
 
+// Literals state the full contract; toWireSchema strips the keywords the
+// provider's validator rejects before anything reaches the wire. The Zod
+// gates above stay authoritative.
 const faithfulnessJsonSchema = {
   type: "json_schema" as const,
-  schema: {
+  schema: toWireSchema({
     type: "object",
     additionalProperties: false,
     required: ["verdicts"],
@@ -99,12 +103,12 @@ const faithfulnessJsonSchema = {
         },
       },
     },
-  },
+  }),
 };
 
 const scoreJsonSchema = {
   type: "json_schema" as const,
-  schema: {
+  schema: toWireSchema({
     type: "object",
     additionalProperties: false,
     required: ["score", "why"],
@@ -112,22 +116,20 @@ const scoreJsonSchema = {
       score: { type: "integer", minimum: 1, maximum: 5 },
       why: { type: "string", minLength: 1 },
     },
-  },
+  }),
 };
 
 const pairwiseJsonSchema = {
   type: "json_schema" as const,
-  schema: {
+  schema: toWireSchema({
     type: "object",
     additionalProperties: false,
     required: ["picks"],
     properties: {
       picks: {
-        // No maxItems: the provider's structured-output validator rejects it
-        // (evidenced live, 2026-08-31). Exactly-three is enforced by the Zod
-        // gate (.length(3)) and the exactly-once-per-dimension check.
         type: "array",
         minItems: 3,
+        maxItems: 3,
         items: {
           type: "object",
           additionalProperties: false,
@@ -143,7 +145,7 @@ const pairwiseJsonSchema = {
         },
       },
     },
-  },
+  }),
 };
 
 // --- Prompt rendering. Everything is plain text; indexes replace ids.

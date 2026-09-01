@@ -7,6 +7,7 @@
 // comfortably above them — buildSystemPrefix is tested for that.
 
 import { modelCatalog } from "./config";
+import { toWireSchema } from "./wire-schema";
 
 export type SystemBlock = {
   type: "text";
@@ -72,6 +73,10 @@ export function buildSystemPrefix(): SystemBlock[] {
 
 // JSON Schemas for the API's structured-output format, mirroring the Zod
 // contracts that gate persistence. The runtime Zod check stays authoritative.
+// The literals below state the FULL contract; toWireSchema strips the
+// keywords the provider's validator rejects before anything reaches the
+// wire, so authors write intent here and the supported subset is enforced
+// in one place (see wire-schema.ts).
 const statementKindEnum = [
   "fact",
   "decision",
@@ -94,7 +99,7 @@ const concernCodeEnum = [
 
 export const extractionOutputFormat = {
   type: "json_schema" as const,
-  schema: {
+  schema: toWireSchema({
     type: "object",
     additionalProperties: false,
     required: ["statements", "concerns"],
@@ -125,7 +130,7 @@ export const extractionOutputFormat = {
         },
       },
     },
-  },
+  }),
 };
 
 const nextQuestionPayloadJsonSchema = {
@@ -134,11 +139,9 @@ const nextQuestionPayloadJsonSchema = {
   required: ["candidates", "contradictions", "readyAdvice"],
   properties: {
     candidates: {
-      // The provider's structured-output validator rejects maxItems
-      // (evidenced live, 2026-08-31): the one-to-five ceiling is stated in
-      // the prompt contract text and enforced by the Zod gate (.max(5)).
       type: "array",
       minItems: 1,
+      maxItems: 5,
       items: {
         type: "object",
         additionalProperties: false,
@@ -237,7 +240,7 @@ const coachPayloadJsonSchema = {
 // per-switch thrashing a shared-format envelope prevents on the Fable side.
 export const incrementalExtractionOutputFormat = {
   type: "json_schema" as const,
-  schema: {
+  schema: toWireSchema({
     type: "object",
     additionalProperties: false,
     required: ["statements", "concerns"],
@@ -267,7 +270,7 @@ export const incrementalExtractionOutputFormat = {
         },
       },
     },
-  },
+  }),
 };
 
 // One tagged output format shared byte-identically by BOTH Fable tasks:
@@ -277,7 +280,7 @@ export const incrementalExtractionOutputFormat = {
 // while the task/payload pairing is enforced by Zod after the envelope.
 export const fableOutputFormat = {
   type: "json_schema" as const,
-  schema: {
+  schema: toWireSchema({
     type: "object",
     additionalProperties: false,
     required: ["task", "payload"],
@@ -287,7 +290,7 @@ export const fableOutputFormat = {
         anyOf: [nextQuestionPayloadJsonSchema, coachPayloadJsonSchema],
       },
     },
-  },
+  }),
 };
 
 // One exact request description per task. The cost estimator and the live
