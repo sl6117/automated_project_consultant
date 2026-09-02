@@ -1,0 +1,122 @@
+{
+  "runId": "baseline-2026-09",
+  "capturedAt": "2026-09-02T04:53:25.294Z",
+  "gitCommit": "5bff68b",
+  "models": {
+    "sonnet": "claude-sonnet-4-6",
+    "fable": "claude-fable-5"
+  },
+  "promptVersionNote": "prompts as of commit 5bff68b",
+  "briefIds": [
+    "birdsong-logger",
+    "choir-sheet-library",
+    "climbing-gym-waivers",
+    "community-garden",
+    "freelance-invoices",
+    "pharmacy-refill",
+    "plant-watering-kiosk",
+    "ramen-inventory",
+    "school-pickup-roster",
+    "teatime-newsletter",
+    "till-shift-notes",
+    "van-maintenance-log"
+  ],
+  "files": [
+    {
+      "path": "birdsong-logger/consultation.jsonl",
+      "sha256": "8d8d4496340469a2a9c550d429a4fe6085be678a9cc419369ab0afcbdc761f8f"
+    },
+    {
+      "path": "birdsong-logger/judge.jsonl",
+      "sha256": "b3f8e73cc915490980733aac3452ffd5639b5748b99531b7904fd6aa60bb59c7"
+    },
+    {
+      "path": "choir-sheet-library/consultation.jsonl",
+      "sha256": "97eccd2198bc3f90b1f960bb57c2f2e005e01427967a835bfb48c7999ea9f871"
+    },
+    {
+      "path": "choir-sheet-library/judge.jsonl",
+      "sha256": "14c7a3cfeb018b5069b5953dd05e6b2eaaf2d22f3bff72b224faa23d3813e00a"
+    },
+    {
+      "path": "climbing-gym-waivers/consultation.jsonl",
+      "sha256": "56221268ccb543efdf3c63e8f5deb726d0d97735af3991d484b23707af98d294"
+    },
+    {
+      "path": "climbing-gym-waivers/judge.jsonl",
+      "sha256": "a1c5b2d842cc822e7b0b7be2a740b9d53e6bdffdd0b6c35e482dcad0846b3861"
+    },
+    {
+      "path": "community-garden/consultation.jsonl",
+      "sha256": "95836699778d705a84c0b8786f8f6c77d2876a8258d50364c871a504813bfe5b"
+    },
+    {
+      "path": "community-garden/judge.jsonl",
+      "sha256": "52ccb2f480c5bb0cbd1d2e71fdd72bf986af010f30453032ded6882889b84f14"
+    },
+    {
+      "path": "freelance-invoices/consultation.jsonl",
+      "sha256": "4b30a3b51a67397fc2e8d7f24062d4a00da77ebe675247da16563b5db05873b3"
+    },
+    {
+      "path": "freelance-invoices/judge.jsonl",
+      "sha256": "c0713962bf16362f48ab401b0c9b8ffd876a4cba39919a250ee48015c4987bdd"
+    },
+    {
+      "path": "pharmacy-refill/consultation.jsonl",
+      "sha256": "efb7cdd6601b1cd336dc87edefc7a0557907b801c7a21153df4ac3db3c3f13f1"
+    },
+    {
+      "path": "pharmacy-refill/judge.jsonl",
+      "sha256": "26765239d644d5d1f574594df7edbfc4515964de41bae7f39b36f7216987fccf"
+    },
+    {
+      "path": "plant-watering-kiosk/consultation.jsonl",
+      "sha256": "395bf377cbcf59c34ba931edc020b37cd4b31c6126e7c74fb4046917ccd77167"
+    },
+    {
+      "path": "plant-watering-kiosk/judge.jsonl",
+      "sha256": "a83141256ef3f64096fbfc6f34ef7cd396fa76121e73b829cfe73652f99c79e1"
+    },
+    {
+      "path": "ramen-inventory/consultation.jsonl",
+      "sha256": "566659ea88cff641b013a33ea66dfc822298f102452910f34be6f1ecb6135377"
+    },
+    {
+      "path": "ramen-inventory/judge.jsonl",
+      "sha256": "9c3db4ccac4c612a875d6af29d12a298c57dc807eb6507284383981b750b1b01"
+    },
+    {
+      "path": "school-pickup-roster/consultation.jsonl",
+      "sha256": "5da885cd7aaa2f624b8d6155fd3ca9af4d82f2eda852b6fbc88e2dd0af3c720c"
+    },
+    {
+      "path": "school-pickup-roster/judge.jsonl",
+      "sha256": "5dedddf20a800d2c65632046af0190a4dff49f56982092feda57e97efa4c1704"
+    },
+    {
+      "path": "teatime-newsletter/consultation.jsonl",
+      "sha256": "6eb2838d8af544639dc59423bc8188227d2e82e49a1cd198a1c290281b35aafa"
+    },
+    {
+      "path": "teatime-newsletter/judge.jsonl",
+      "sha256": "99cb9517b80197b60dab16b9ebaecfc2ee20532ca3b1e0bfd5dad347c2a22a97"
+    },
+    {
+      "path": "till-shift-notes/consultation.jsonl",
+      "sha256": "fa746e778bf5b748db4d2427c53b5272daa5ea9d3f6547ec74051cde72eca596"
+    },
+    {
+      "path": "till-shift-notes/judge.jsonl",
+      "sha256": "f530015d610d49bfa0f446cc2a0baeaae9148f222ed5f70efa5f46c3b1b54e91"
+    },
+    {
+      "path": "van-maintenance-log/consultation.jsonl",
+      "sha256": "6ec8adba3c6d5e4a1a28269886a858a21fd47730a845113de68e6da9c066ffd4"
+    },
+    {
+      "path": "van-maintenance-log/judge.jsonl",
+      "sha256": "b9bda097f5d973f81c7285d583f84baa883f2ae6852af54469ee4ade465e5a26"
+    }
+  ]
+}
