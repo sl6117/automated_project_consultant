@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit --pretty false",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers=2",
     "test:browser": "playwright test",
     "eval": "node --import tsx src/eval/run-eval.ts",
     "eval:capture": "node --import tsx src/eval/capture-cli.ts"
