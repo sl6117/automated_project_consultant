@@ -178,6 +178,35 @@ describe("judge prompts", () => {
     );
   });
 
+  test("faithfulness keeps the recorded ceiling through 20 statements and grows above it", () => {
+    const withStatementCount = (count: number): ReplayTranscript => ({
+      ...transcript(),
+      approvedStatements: Array.from({ length: count }, (_, index) => ({
+        kind: "fact" as const,
+        body: `Statement ${index}.`,
+      })),
+    });
+
+    expect(
+      describeFaithfulnessRequest({
+        brief,
+        transcript: withStatementCount(20),
+      }).max_tokens,
+    ).toBe(1_000);
+    expect(
+      describeFaithfulnessRequest({
+        brief,
+        transcript: withStatementCount(21),
+      }).max_tokens,
+    ).toBe(2_000);
+    expect(
+      describeFaithfulnessRequest({
+        brief,
+        transcript: withStatementCount(41),
+      }).max_tokens,
+    ).toBe(3_000);
+  });
+
   test("identical inputs render byte-identical requests with equal hashes", () => {
     const first = describeUsefulnessRequest({
       brief,

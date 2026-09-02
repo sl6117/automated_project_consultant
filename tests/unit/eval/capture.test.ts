@@ -393,7 +393,7 @@ describe("capture campaign", () => {
     writeBrief(root, "alpha");
     const budgetPath = join(root, "budget.jsonl");
     initializeBudget(budgetPath, {
-      capMicrocents: 1_500_000_000,
+      capMicrocents: 400_000_000,
       note: "test",
     });
     // Simulate earlier failed windows: commit spend near the cap.
@@ -429,7 +429,9 @@ describe("capture campaign", () => {
     expect(calls).toBe(0);
     expect(lines.join("\n")).toContain("cap override is required");
 
-    // An owner-approved override lets the same brief proceed.
+    // The override is cumulative: only its unspent headroom plus judge
+    // headroom must fit the 260M aggregate remainder. Requiring the full
+    // 300M override plus 50M judge cap would double-count the committed 140M.
     const overridden = await runCaptureCampaign(
       campaignInput(root, {
         consultantCapOverrides: { alpha: 300_000_000 },

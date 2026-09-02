@@ -16,6 +16,16 @@ import type { ReplayTranscript } from "./replay";
 // and a fresh replay renders byte-identical requests.
 
 const JUDGE_MAX_OUTPUT_TOKENS = 1_000;
+const DEFAULT_FAITHFULNESS_STATEMENT_LIMIT = 20;
+
+function faithfulnessMaxOutputTokens(statementCount: number): number {
+  return (
+    Math.max(
+      1,
+      Math.ceil(statementCount / DEFAULT_FAITHFULNESS_STATEMENT_LIMIT),
+    ) * JUDGE_MAX_OUTPUT_TOKENS
+  );
+}
 
 // Structurally parallel to the consultant's ModelRequestDescription but with
 // the judge's own output formats: the consultant type closes its format
@@ -192,7 +202,11 @@ export function describeFaithfulnessRequest(input: {
     .join("\n");
   return {
     model: modelCatalog.sonnet.apiId,
-    max_tokens: JUDGE_MAX_OUTPUT_TOKENS,
+    // Faithfulness emits one verdict per statement, so unusually large
+    // statement sets need a larger structured-output envelope.
+    max_tokens: faithfulnessMaxOutputTokens(
+      input.transcript.approvedStatements.length,
+    ),
     system: judgeSystem(),
     messages: [
       {

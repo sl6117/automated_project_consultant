@@ -97,11 +97,25 @@ export async function runCaptureCampaign(input: {
 
     const budgetState = readBudget(input.budgetPath);
     const remaining = budgetState.remainingMicrocents;
-    const needed = consultantCap + input.perBriefJudgeCapMicrocents;
+    const consultantCommitted = briefCommittedMicrocents(
+      budgetState,
+      input.runId,
+      brief.id,
+      "consultant",
+    );
+    const judgeCommitted = briefCommittedMicrocents(
+      budgetState,
+      input.runId,
+      brief.id,
+      "judge",
+    );
+    const needed =
+      Math.max(0, consultantCap - consultantCommitted) +
+      Math.max(0, input.perBriefJudgeCapMicrocents - judgeCommitted);
     if (remaining < needed) {
       incomplete.push(brief.id);
       log(
-        `refuse ${brief.id}: per-brief caps (${needed}) no longer fit the remaining budget (${remaining})`,
+        `refuse ${brief.id}: remaining per-brief cap headroom (${needed}) no longer fits the remaining budget (${remaining})`,
       );
       continue;
     }
@@ -111,12 +125,6 @@ export async function runCaptureCampaign(input: {
     // estimated with an empty ledger — a floor, since context only grows).
     // Without this, a brief near its cap spends a real extraction only to
     // hit the deterministic refusal on the very next call.
-    const committed = briefCommittedMicrocents(
-      budgetState,
-      input.runId,
-      brief.id,
-      "consultant",
-    );
     const openingEstimate =
       estimateRequestCostMicrocents(
         "sonnet",
@@ -138,10 +146,10 @@ export async function runCaptureCampaign(input: {
           },
         }),
       );
-    if (committed + openingEstimate > consultantCap) {
+    if (consultantCommitted + openingEstimate > consultantCap) {
       incomplete.push(brief.id);
       log(
-        `refuse ${brief.id}: ${committed} microcents already committed against its ${consultantCap} consultant cap; the opening calls need ~${openingEstimate} more. Owner approval of a per-brief cap override is required to continue this brief.`,
+        `refuse ${brief.id}: ${consultantCommitted} microcents already committed against its ${consultantCap} consultant cap; the opening calls need ~${openingEstimate} more. Owner approval of a per-brief cap override is required to continue this brief.`,
       );
       continue;
     }
