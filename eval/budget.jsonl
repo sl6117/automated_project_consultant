@@ -371,3 +371,17 @@
 {"kind":"settlement","at":"2026-09-02T04:24:13.469Z","reservationId":"5fa3f7e2-b340-4be5-80d7-dd79907e0f3a","outcome":"succeeded","actualMicrocents":757800}
 {"kind":"reservation","id":"39f2dc87-640d-49d1-b4ae-59edd263a271","at":"2026-09-02T04:24:13.480Z","runId":"baseline-2026-09","briefId":"school-pickup-roster","role":"judge","estimateMicrocents":2834100}
 {"kind":"settlement","at":"2026-09-02T04:24:19.408Z","reservationId":"39f2dc87-640d-49d1-b4ae-59edd263a271","outcome":"succeeded","actualMicrocents":473700}
+{"kind":"reservation","id":"9608aeae-daf1-46ff-b952-217d894af088","at":"2026-09-02T04:51:58.675Z","runId":"baseline-2026-09","briefId":"climbing-gym-waivers","role":"consultant","estimateMicrocents":5134800}
+{"kind":"settlement","at":"2026-09-02T04:52:17.184Z","reservationId":"9608aeae-daf1-46ff-b952-217d894af088","outcome":"succeeded","actualMicrocents":1942575}
+{"kind":"reservation","id":"4455d667-5112-4f99-8840-9b567b699e24","at":"2026-09-02T04:52:17.201Z","runId":"baseline-2026-09","briefId":"climbing-gym-waivers","role":"consultant","estimateMicrocents":29842000}
+{"kind":"settlement","at":"2026-09-02T04:52:36.697Z","reservationId":"4455d667-5112-4f99-8840-9b567b699e24","outcome":"succeeded","actualMicrocents":12803000}
+{"kind":"reservation","id":"92919f67-7b49-41c6-bdc3-b6abd35ab26d","at":"2026-09-02T04:52:36.719Z","runId":"baseline-2026-09","briefId":"climbing-gym-waivers","role":"consultant","estimateMicrocents":6406200}
+{"kind":"settlement","at":"2026-09-02T04:52:45.231Z","reservationId":"92919f67-7b49-41c6-bdc3-b6abd35ab26d","outcome":"succeeded","actualMicrocents":1758600}
+{"kind":"reservation","id":"1686d1b2-9e3c-4d64-8b8d-b54e635b4a76","at":"2026-09-02T04:52:45.251Z","runId":"baseline-2026-09","briefId":"climbing-gym-waivers","role":"consultant","estimateMicrocents":31658000}
+{"kind":"settlement","at":"2026-09-02T04:53:02.303Z","reservationId":"1686d1b2-9e3c-4d64-8b8d-b54e635b4a76","outcome":"succeeded","actualMicrocents":7884000}
+{"kind":"reservation","id":"2cfe4e79-d085-4776-a673-05dcc2d62d5f","at":"2026-09-02T04:53:02.323Z","runId":"baseline-2026-09","briefId":"climbing-gym-waivers","role":"judge","estimateMicrocents":3104400}
+{"kind":"settlement","at":"2026-09-02T04:53:16.147Z","reservationId":"2cfe4e79-d085-4776-a673-05dcc2d62d5f","outcome":"succeeded","actualMicrocents":1418400}
+{"kind":"reservation","id":"e77765c7-6a18-4be0-bde6-ab512db30d57","at":"2026-09-02T04:53:16.156Z","runId":"baseline-2026-09","briefId":"climbing-gym-waivers","role":"judge","estimateMicrocents":2502300}
+{"kind":"settlement","at":"2026-09-02T04:53:20.460Z","reservationId":"e77765c7-6a18-4be0-bde6-ab512db30d57","outcome":"succeeded","actualMicrocents":411000}
+{"kind":"reservation","id":"e534fea3-a167-479a-b6d6-02376c5d82c9","at":"2026-09-02T04:53:20.471Z","runId":"baseline-2026-09","briefId":"climbing-gym-waivers","role":"judge","estimateMicrocents":3469800}
+{"kind":"settlement","at":"2026-09-02T04:53:25.271Z","reservationId":"e534fea3-a167-479a-b6d6-02376c5d82c9","outcome":"succeeded","actualMicrocents":627900}
