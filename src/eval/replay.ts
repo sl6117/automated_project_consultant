@@ -115,8 +115,22 @@ export async function replayBrief(input: {
   brief: Brief;
   client: ModelClient;
 }): Promise<ReplayTranscript> {
-  const { brief, client } = input;
+  // The in-memory ledger holds a native better-sqlite3 handle; leaving it
+  // open leaks across test workers and crashes vitest's forks pool at
+  // teardown on Linux CI. Close it on every path, success or throw.
   const db = openMemoryLedger();
+  try {
+    return await replayBriefWithLedger(input, db);
+  } finally {
+    db.close();
+  }
+}
+
+async function replayBriefWithLedger(
+  input: { brief: Brief; client: ModelClient },
+  db: ReturnType<typeof openMemoryLedger>,
+): Promise<ReplayTranscript> {
+  const { brief, client } = input;
   const persona = createPersona(brief);
   const turns: TurnRecord[] = [];
   let coreCoveredAtTurn: number | null = null;

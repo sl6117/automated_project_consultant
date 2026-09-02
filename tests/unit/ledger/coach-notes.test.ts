@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   getCoachNote,
   listCoachNotes,
@@ -14,7 +14,7 @@ import {
 import type { ProposeCoachNoteInput } from "../../../src/server/ledger/schemas";
 
 function seedSession() {
-  const db = openMemoryLedger();
+  const db = openTestLedger();
   const project = createProject(db, "Coach check");
   const session = createSession(db, project.id);
   return { db, sessionId: session.id };

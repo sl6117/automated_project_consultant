@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import { CostCapError } from "../../../src/server/ledger/cost";
 import {
   beginModelAttempt,
@@ -13,14 +13,14 @@ import { LedgerValidationError } from "../../../src/server/ledger/statements";
 const CENT = 1_000_000;
 
 function seedSession(capCents = 100) {
-  const db = openMemoryLedger();
+  const db = openTestLedger();
   const project = createProject(db, "Cap check");
   const session = createSession(db, project.id, capCents);
   return { db, sessionId: session.id };
 }
 
 function begin(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
   estimatedCostMicrocents: number,
   confirmedOverCap?: boolean,

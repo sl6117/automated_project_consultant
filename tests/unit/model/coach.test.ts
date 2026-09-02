@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import { listCoachNotes } from "../../../src/server/ledger/coach-notes";
 import { approveConcern, listConcerns } from "../../../src/server/ledger/concerns";
 import { CostCapError } from "../../../src/server/ledger/cost";
@@ -63,7 +63,7 @@ function coachClient(
 
 // Phase 2 start is extraction-only, so reaching a pending question means
 // clearing review and asking the adaptive question explicitly.
-async function startActiveSession(db: ReturnType<typeof openMemoryLedger>) {
+async function startActiveSession(db: ReturnType<typeof openTestLedger>) {
   const result = await extractAndStartSession(db, {
     projectName: "Life Admin Inbox",
     idea: "A box for household tasks",
@@ -87,7 +87,7 @@ async function startActiveSession(db: ReturnType<typeof openMemoryLedger>) {
 }
 
 function initializationStatus(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
 ): string {
   const row = db
@@ -100,7 +100,7 @@ function initializationStatus(
 
 describe("requestCoaching", () => {
   test("persists the recorded coach note tied to the question and a fable receipt", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, question } = await startActiveSession(db);
 
     const { note, sessionId: derived } = await requestCoaching(db, {
@@ -133,7 +133,7 @@ describe("requestCoaching", () => {
   });
 
   test("an invalid payload keeps a validation_failed receipt and the session active", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, question } = await startActiveSession(db);
 
     await expect(
@@ -158,7 +158,7 @@ describe("requestCoaching", () => {
   });
 
   test("rejects a valid payload under the wrong task tag", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, question } = await startActiveSession(db);
 
     // A schema-valid next_question envelope must not become a coach note.
@@ -175,7 +175,7 @@ describe("requestCoaching", () => {
   });
 
   test("rejects a payload carrying fields outside the coach contract", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, question } = await startActiveSession(db);
 
     await expect(
@@ -193,7 +193,7 @@ describe("requestCoaching", () => {
   });
 
   test("rejects a whitespace-only falsifier", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, question } = await startActiveSession(db);
 
     await expect(
@@ -208,7 +208,7 @@ describe("requestCoaching", () => {
   });
 
   test("stub coaching is synthetic and references the pending question", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const client = createStubModelClient();
     const result = await extractAndStartSession(db, {
       projectName: "Ramen ops",
@@ -242,7 +242,7 @@ describe("requestCoaching", () => {
   });
 
   test("coaching sends approved statements and concerns as context", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, question } = await startActiveSession(db);
     void sessionId;
 
@@ -270,7 +270,7 @@ describe("requestCoaching", () => {
   });
 
   test("the over-cap confirmation threads through coaching to the attempt row", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, question } = await startActiveSession(db);
     // Shrink the cap below any conservative estimate.
     db.prepare(
@@ -303,7 +303,7 @@ describe("requestCoaching", () => {
   });
 
   test("an unknown question id fails before any model bookkeeping", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId } = await startActiveSession(db);
     const before = db
       .prepare("SELECT COUNT(*) AS n FROM model_calls WHERE session_id = ?")

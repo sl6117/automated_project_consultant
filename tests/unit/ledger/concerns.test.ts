@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   approveConcern,
   editConcern,
@@ -11,7 +11,7 @@ import { createProject, createSession } from "../../../src/server/ledger/project
 import { LedgerValidationError } from "../../../src/server/ledger/statements";
 
 function seedSession() {
-  const db = openMemoryLedger();
+  const db = openTestLedger();
   const project = createProject(db, "Synthetic inbox");
   const session = createSession(db, project.id);
   return { db, sessionId: session.id };

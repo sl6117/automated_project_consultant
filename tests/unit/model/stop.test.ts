@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   approveConcern,
   listConcerns,
@@ -26,7 +26,7 @@ const phase2 = join(process.cwd(), "tests/fixtures/phase-2");
 // for the core codes the extraction fixture leaves open. The extraction's
 // approved fact satisfies checklist item 3.
 async function coveredSession(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   options: { skipSuccess?: boolean } = {},
 ) {
   const { sessionId } = await extractAndStartSession(db, {
@@ -64,7 +64,7 @@ const stopClient = () =>
 
 describe("askAdaptiveQuestion deterministic stop", () => {
   test("brief D: a passing checklist yields no pending question and offers ready", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await coveredSession(db);
 
     const { question, stop } = await askAdaptiveQuestion(db, {
@@ -87,7 +87,7 @@ describe("askAdaptiveQuestion deterministic stop", () => {
   });
 
   test("brief D variant: ready advice cannot offer ready past a missing core code", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await coveredSession(db, { skipSuccess: true });
 
     // The fixture claims readyAdvice.ready: true; the checklist disagrees.
@@ -105,7 +105,7 @@ describe("askAdaptiveQuestion deterministic stop", () => {
   });
 
   test("confirming framing does not lock further questions", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await coveredSession(db);
 
     const first = await askAdaptiveQuestion(db, {
@@ -137,7 +137,7 @@ describe("askAdaptiveQuestion deterministic stop", () => {
   });
 
   test("the payload's contradictions persist before the checklist is read", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await coveredSession(db);
 
     // Same green session, but the payload carries a fresh tension citing the

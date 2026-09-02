@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import { approveConcern, listConcerns } from "../../../src/server/ledger/concerns";
 import {
   getPendingQuestion,
@@ -23,7 +23,7 @@ const phase2 = join(process.cwd(), "tests/fixtures/phase-2");
 
 // Start recorded, clear review, ask, and answer — the state every
 // incremental call begins from.
-async function answeredSession(db: ReturnType<typeof openMemoryLedger>) {
+async function answeredSession(db: ReturnType<typeof openTestLedger>) {
   const { sessionId } = await extractAndStartSession(db, {
     projectName: "Life Admin Inbox",
     idea: "A box for household tasks",
@@ -52,7 +52,7 @@ async function answeredSession(db: ReturnType<typeof openMemoryLedger>) {
 }
 
 function answersFor(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   questionId: string,
 ): number {
   const row = db
@@ -63,7 +63,7 @@ function answersFor(
 
 describe("proposeFromAnswer", () => {
   test("valid output lands as proposed rows only, never approved", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, questionId } = await answeredSession(db);
     const approvedBefore = listStatements(db, sessionId, "approved").length;
 
@@ -88,7 +88,7 @@ describe("proposeFromAnswer", () => {
   });
 
   test("a valid empty payload persists nothing and is not an error", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, questionId } = await answeredSession(db);
 
     const result = await proposeFromAnswer(db, {
@@ -113,7 +113,7 @@ describe("proposeFromAnswer", () => {
   });
 
   test("invalid output leaves the answer stored and adds nothing beyond it", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, questionId } = await answeredSession(db);
 
     await expect(
@@ -140,7 +140,7 @@ describe("proposeFromAnswer", () => {
   });
 
   test("refuses a question that is still pending", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId } = await extractAndStartSession(db, {
       projectName: "Pending",
       idea: "A box for household tasks",

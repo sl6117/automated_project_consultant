@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { compileArtifacts } from "../../../src/server/artifacts/compiler";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   promoteCoachNote,
   proposeCoachNote,
@@ -24,14 +24,14 @@ import { extractAndStartSession } from "../../../src/server/model/extract";
 import { createRecordedModelClient } from "../../../src/server/model/recorded-client";
 
 function seedSession() {
-  const db = openMemoryLedger();
+  const db = openTestLedger();
   const project = createProject(db, "Marker project");
   const session = createSession(db, project.id);
   return { db, sessionId: session.id };
 }
 
 function approveNewStatement(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
   kind: "fact" | "decision" | "hypothesis" | "unknown" | "deferred",
   body: string,
@@ -101,7 +101,7 @@ describe("compileArtifacts", () => {
   });
 
   test("the raw project idea never enters any artifact", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const project = createProject(
       db,
       "Idea boundary",
@@ -151,7 +151,7 @@ describe("compileArtifacts", () => {
   });
 
   test("an answered question appears exactly once per file", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId } = await extractAndStartSession(db, {
       projectName: "Answered once",
       idea: "one household inbox",

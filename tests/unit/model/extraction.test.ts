@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   approveConcern,
   listConcerns,
@@ -49,7 +49,7 @@ type AttemptSummary = {
 };
 
 function attempts(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
 ): AttemptSummary[] {
   return db
@@ -61,7 +61,7 @@ function attempts(
 }
 
 function sessionStatus(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
 ): string {
   const row = db
@@ -73,7 +73,7 @@ function sessionStatus(
 }
 
 function clearReview(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
 ): void {
   for (const row of listStatements(db, sessionId, "proposed")) {
@@ -86,7 +86,7 @@ function clearReview(
 
 describe("extractAndStartSession", () => {
   test("start is extraction only: proposals exist, no question row", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const result = await extractAndStartSession(db, {
       projectName: "Life Admin Inbox",
       idea: "A box for household tasks",
@@ -110,7 +110,7 @@ describe("extractAndStartSession", () => {
   });
 
   test("an invalid extraction fails the start with one receipt and no content", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const result = await extractAndStartSession(db, {
       projectName: "Failed extraction",
       idea: "A box for household tasks",
@@ -128,7 +128,7 @@ describe("extractAndStartSession", () => {
   });
 
   test("a transport failure keeps its estimate reserved and fails the start", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const broken = createRecordedModelClient();
     const client = {
       ...broken,
@@ -154,7 +154,7 @@ describe("extractAndStartSession", () => {
   });
 
   test("retry reuses the failed session and its cap", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const failed = await extractAndStartSession(db, {
       projectName: "Retry flow",
       idea: "A box for household tasks",
@@ -182,7 +182,7 @@ describe("extractAndStartSession", () => {
   });
 
   test("the over-cap confirmation threads from retry to the attempt row", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const project = createProject(db, "Over cap", "A box for household tasks");
     const session = createSession(db, project.id, 1);
 
@@ -205,7 +205,7 @@ describe("extractAndStartSession", () => {
   });
 
   test("retrying an active session is refused", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const result = await extractAndStartSession(db, {
       projectName: "Active",
       idea: "A box for household tasks",
@@ -221,7 +221,7 @@ describe("extractAndStartSession", () => {
   });
 
   test("stub extraction quotes the submitted title and idea, without a question", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const idea = "ramen restaurant inventory and budget manager";
     const result = await extractAndStartSession(db, {
       projectName: "Ramen ops",
@@ -237,7 +237,7 @@ describe("extractAndStartSession", () => {
 });
 
 describe("askAdaptiveQuestion", () => {
-  async function startActive(db: ReturnType<typeof openMemoryLedger>) {
+  async function startActive(db: ReturnType<typeof openTestLedger>) {
     const result = await extractAndStartSession(db, {
       projectName: "Life Admin Inbox",
       idea: "A box for household tasks",
@@ -247,7 +247,7 @@ describe("askAdaptiveQuestion", () => {
   }
 
   test("is gated until every proposal is reviewed", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
 
     await expect(
@@ -262,7 +262,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("a clear review yields the pending question and a fable receipt", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
 
@@ -294,7 +294,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("the user message carries approved row ids; the prefix does not", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
     const approvedStatement = listStatements(db, sessionId, "approved")[0]!;
@@ -325,7 +325,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("the user message names missing cores, open tensions, and resolved questions", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
 
@@ -432,7 +432,7 @@ describe("askAdaptiveQuestion", () => {
   }
 
   function expectNothingApplied(
-    db: ReturnType<typeof openMemoryLedger>,
+    db: ReturnType<typeof openTestLedger>,
     sessionId: string,
   ) {
     // The receipt keeps the spend; no content of any kind was applied.
@@ -449,7 +449,7 @@ describe("askAdaptiveQuestion", () => {
   }
 
   test("a cited statement retracted mid-call refuses the whole content commit", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
     const citedIds = listStatements(db, sessionId, "approved").map(
@@ -480,7 +480,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("an UNCITED approved statement changing mid-call also refuses the commit", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
     const approvedIds = listStatements(db, sessionId, "approved").map(
@@ -505,7 +505,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("concern coverage changing mid-call refuses the commit", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
 
@@ -535,7 +535,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("persists every candidate with claimed and effective scores and both ranks", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
 
@@ -587,7 +587,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("an unknown cited statement id invalidates the whole payload", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
 
@@ -639,7 +639,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("an out-of-range contradiction target invalidates the whole payload", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
 
@@ -680,7 +680,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("a wrong-task envelope persists nothing and keeps the session active", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startActive(db);
     clearReview(db, sessionId);
 
@@ -700,7 +700,7 @@ describe("askAdaptiveQuestion", () => {
   });
 
   test("an unknown session fails before any model bookkeeping", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     await expect(
       askAdaptiveQuestion(db, {
         sessionId: "missing",

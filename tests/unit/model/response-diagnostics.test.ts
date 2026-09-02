@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import { createProject, createSession } from "../../../src/server/ledger/projects";
 import { runModelAttempt } from "../../../src/server/model/attempt-runner";
 import { createLiveModelClient } from "../../../src/server/model/live-client";
@@ -147,7 +147,7 @@ describe("live client diagnostics", () => {
 
 describe("validation failures carry diagnostics and settle at actual cost", () => {
   test("attempt runner: error states the cause, attempt settles validation_failed with actuals", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const project = createProject(db, "P", "i");
     const session = createSession(db, project.id);
     const request = describeExtractionRequest({ idea: "i", projectName: "P" });

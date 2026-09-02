@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   approveConcern,
   listConcerns,
@@ -28,7 +28,7 @@ function briefClient(name: string) {
   });
 }
 
-async function startCleared(db: ReturnType<typeof openMemoryLedger>) {
+async function startCleared(db: ReturnType<typeof openTestLedger>) {
   const { sessionId } = await extractAndStartSession(db, {
     projectName: "Recorded briefs",
     idea: "A box for household tasks",
@@ -41,7 +41,7 @@ async function startCleared(db: ReturnType<typeof openMemoryLedger>) {
 }
 
 function approveUserConcern(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
   code: "problem" | "user" | "workflow" | "success",
 ) {
@@ -57,7 +57,7 @@ function approveUserConcern(
 }
 
 function persistedCandidates(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
 ) {
   return db
@@ -74,7 +74,7 @@ function persistedCandidates(
 
 describe("recorded briefs A-D end to end", () => {
   test("brief A: the missing-core candidate beats the model's first pick", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startCleared(db);
     // Approved coverage: problem and success only; user and workflow missing.
     for (const row of listConcerns(db, sessionId, "proposed")) {
@@ -97,7 +97,7 @@ describe("recorded briefs A-D end to end", () => {
   });
 
   test("brief B: highest claimed sliceBounding wins with the ontology tie-break", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startCleared(db);
     // All four core codes covered (extraction approves user; add the rest).
     for (const row of listConcerns(db, sessionId, "proposed")) {
@@ -128,7 +128,7 @@ describe("recorded briefs A-D end to end", () => {
   });
 
   test("brief C: targeting the open tension beats a higher slice-bounding claim", async () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const sessionId = await startCleared(db);
     for (const row of listConcerns(db, sessionId, "proposed")) {
       approveConcern(db, row.id);

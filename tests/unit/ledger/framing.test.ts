@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   approveConcern,
   proposeConcern,
@@ -25,7 +25,7 @@ import {
 
 // Builds the minimal green state: all four core codes covered, one approved
 // fact, no tensions, no pending question, no proposals.
-function readySession(db: ReturnType<typeof openMemoryLedger>) {
+function readySession(db: ReturnType<typeof openTestLedger>) {
   const project = createProject(db, "Framing", "an idea");
   const session = createSession(db, project.id, 500);
   for (const code of ["problem", "user", "workflow", "success"] as const) {
@@ -52,7 +52,7 @@ function readySession(db: ReturnType<typeof openMemoryLedger>) {
 }
 
 function failingKeys(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
 ): string[] {
   return evaluateStopChecklist(db, sessionId)
@@ -62,7 +62,7 @@ function failingKeys(
 
 describe("evaluateStopChecklist", () => {
   test("all five items pass on the minimal green state", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId } = readySession(db);
 
     const checklist = evaluateStopChecklist(db, sessionId);
@@ -72,7 +72,7 @@ describe("evaluateStopChecklist", () => {
   });
 
   test("each item fails independently with named evidence", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, statement } = readySession(db);
 
     // Item 4: a pending question.
@@ -127,7 +127,7 @@ describe("evaluateStopChecklist", () => {
   });
 
   test("dismissing the last open tension unblocks the stop", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, statement } = readySession(db);
     insertContradictions(db, {
       sessionId,
@@ -147,14 +147,14 @@ describe("evaluateStopChecklist", () => {
   });
 
   test("an unknown session is refused", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     expect(() => evaluateStopChecklist(db, "missing")).toThrow(/not found/);
   });
 });
 
 describe("confirmFraming", () => {
   test("refuses while the checklist fails and leaves framed_at null", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const project = createProject(db, "Not ready", "x");
     const session = createSession(db, project.id, 500);
 
@@ -163,7 +163,7 @@ describe("confirmFraming", () => {
   });
 
   test("writes framed_at once and keeps the original on a repeat confirm", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId } = readySession(db);
 
     const first = confirmFraming(db, sessionId);
@@ -175,7 +175,7 @@ describe("confirmFraming", () => {
   });
 
   test("framed_at is never cleared when the checklist later fails", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, statement } = readySession(db);
     const { framedAt } = confirmFraming(db, sessionId);
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { compileArtifacts } from "../../../src/server/artifacts/compiler";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   ExportNotReadyError,
   getArtifactVersion,
@@ -16,14 +16,14 @@ import {
 } from "../../../src/server/ledger/statements";
 
 function seedSession() {
-  const db = openMemoryLedger();
+  const db = openTestLedger();
   const project = createProject(db, "Export check");
   const session = createSession(db, project.id);
   return { db, sessionId: session.id };
 }
 
 function approveOne(
-  db: ReturnType<typeof openMemoryLedger>,
+  db: ReturnType<typeof openTestLedger>,
   sessionId: string,
   body: string,
 ) {

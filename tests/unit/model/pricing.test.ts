@@ -10,7 +10,7 @@ import {
   describeExtractionRequest,
   describeNextQuestionRequest,
 } from "../../../src/server/model/prompt";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import { emptyAdaptiveContext } from "../helpers/adaptive-context";
 
 const NO_APPROVED = { statements: [], concerns: [] };
@@ -227,7 +227,7 @@ describe("buildSystemPrefix", () => {
 
 describe("assertNoOpenTransaction", () => {
   test("throws inside a transaction and passes outside one", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     expect(() => assertNoOpenTransaction(db)).not.toThrow();
 
     const inside = db.transaction(() => {

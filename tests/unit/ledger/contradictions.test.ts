@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import {
   citedStatementIdsOf,
   dismissContradiction,
@@ -16,7 +16,7 @@ import {
   proposeStatement,
 } from "../../../src/server/ledger/statements";
 
-function seedSession(db: ReturnType<typeof openMemoryLedger>) {
+function seedSession(db: ReturnType<typeof openTestLedger>) {
   const project = createProject(db, "Tensions", "an idea");
   const session = createSession(db, project.id, 500);
   const first = approveStatement(
@@ -42,7 +42,7 @@ function seedSession(db: ReturnType<typeof openMemoryLedger>) {
 
 describe("insertContradictions", () => {
   test("persists payload tensions as open rows with their citations", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, first, second } = seedSession(db);
 
     const inserted = insertContradictions(db, {
@@ -66,7 +66,7 @@ describe("insertContradictions", () => {
   });
 
   test("an exact duplicate of a still-open row is skipped; a closed one may return", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, first, second } = seedSession(db);
     const tension = {
       summary: "Reliable capture is both assumed and untested.",
@@ -102,7 +102,7 @@ describe("insertContradictions", () => {
 
 describe("dismissContradiction", () => {
   test("closes an open row as dismissed and refuses a second close", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, first, second } = seedSession(db);
     insertContradictions(db, {
       sessionId,
@@ -130,7 +130,7 @@ describe("dismissContradiction", () => {
 
 describe("statement-driven resolution", () => {
   test("retracting a cited approved statement resolves every tension citing it", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, first, second } = seedSession(db);
     const third = approveStatement(
       db,
@@ -170,7 +170,7 @@ describe("statement-driven resolution", () => {
   });
 
   test("revising a cited statement supersedes it with a user row and resolves the tension", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, first, second } = seedSession(db);
     insertContradictions(db, {
       sessionId,
@@ -201,7 +201,7 @@ describe("statement-driven resolution", () => {
   });
 
   test("the path refuses statements no open tension cites", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, first, second } = seedSession(db);
 
     // Approved but uncited: this path is for tension resolution, not general
@@ -232,7 +232,7 @@ describe("statement-driven resolution", () => {
   });
 
   test("a cited statement must still be approved to be retracted", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const { sessionId, second } = seedSession(db);
     const proposed = proposeStatement(db, {
       sessionId,
@@ -262,7 +262,7 @@ describe("statement-driven resolution", () => {
   });
 
   test("resolution is scoped to the statement's own session", () => {
-    const db = openMemoryLedger();
+    const db = openTestLedger();
     const a = seedSession(db);
     const b = seedSession(db);
     // Simulate a future id-collision scenario: session B's tension cites a

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi, beforeEach } from "vitest";
-import { openMemoryLedger } from "../../../src/server/db/open";
+import { openTestLedger } from "../helpers/test-db";
 import { describeNextQuestionRequest } from "../../../src/server/model/prompt";
 import { emptyAdaptiveContext } from "../helpers/adaptive-context";
 
@@ -30,7 +30,7 @@ function runInput(overrides: {
   parse?: (payload: unknown) => unknown;
 }) {
   return {
-    db: openMemoryLedger(),
+    db: openTestLedger(),
     sessionId: "s1",
     alias: "fable" as const,
     executionProvenance: "recorded" as const,
