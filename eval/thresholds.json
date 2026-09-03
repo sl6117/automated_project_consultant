@@ -1,5 +1,5 @@
 {
-  "baselineReport": null,
+  "baselineReport": "2026-09-03-baseline.json",
   "minDimensionPassRate": {
     "extractionCoverage": 0.8,
     "questionEfficiency": 0.7,

@@ -1,0 +1,294 @@
+{
+  "generatedAt": "2026-09-03T19:43:14.683Z",
+  "runId": "baseline-2026-09",
+  "runGitCommit": "5bff68b",
+  "briefs": [
+    {
+      "briefId": "birdsong-logger",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "missed-tension"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"search by any\"; missing required fact mentioning \"retrieval\"",
+        "contradictionHandling": "0 tension(s) raised vs 1 labeled"
+      },
+      "costMicrocents": 14344775,
+      "latencyMs": 45971,
+      "calls": 4
+    },
+    {
+      "briefId": "choir-sheet-library",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "redundant-question"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"nobody can confirm\"; missing required fact mentioning \"traceable to a member\"",
+        "questionEfficiency": "turn 1: asked [data, operations, constraints], owner preferred [workflow] — miss; core coverage complete after turn 0"
+      },
+      "costMicrocents": 24202750,
+      "latencyMs": 100827,
+      "calls": 7
+    },
+    {
+      "briefId": "climbing-gym-waivers",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "premature-stop-offer"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"verify waivers on check-in\"; missing required fact mentioning \"sign at the kiosk\"; missing required fact mentioning \"from a link beforehand\"",
+        "stopCorrectness": "stop offered at turn 2, before labeled turn 7 — premature"
+      },
+      "costMicrocents": 26845475,
+      "latencyMs": 86425,
+      "calls": 7
+    },
+    {
+      "briefId": "community-garden",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "redundant-question"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"nobody knows whose week it is\"; missing required fact mentioning \"they get buried in a group chat\"; missing required fact mentioning \"coordinator sets the rota each season\"",
+        "questionEfficiency": "turn 1: asked [problem, workflow], owner preferred [user] — miss; core coverage complete after turn 2"
+      },
+      "costMicrocents": 31339090,
+      "latencyMs": 109208,
+      "calls": 11
+    },
+    {
+      "briefId": "freelance-invoices",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "premature-stop-offer",
+        "missed-tension",
+        "redundant-question"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"invoices go out late and I lose track of unpaid ones\"; missing required fact mentioning \"send it and mark payments when they arrive\"",
+        "questionEfficiency": "turn 1: asked [success], owner preferred [workflow] — miss; core coverage complete after turn 1",
+        "contradictionHandling": "0 tension(s) raised vs 1 labeled",
+        "stopCorrectness": "stop offered at turn 2, before labeled turn 10 — premature"
+      },
+      "costMicrocents": 17909530,
+      "latencyMs": 74144,
+      "calls": 7
+    },
+    {
+      "briefId": "pharmacy-refill",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"I notice only when they come in late and flustered\"; missing required decision mentioning \"unclear record must produce no reminder at all\""
+      },
+      "costMicrocents": 53835170,
+      "latencyMs": 167226,
+      "calls": 13
+    },
+    {
+      "briefId": "plant-watering-kiosk",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "premature-stop-offer",
+        "missed-tension"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"double-watering rots roots and gaps dry plants out\"; missing required fact mentioning \"kiosk lists what is due today\"",
+        "contradictionHandling": "0 tension(s) raised vs 1 labeled",
+        "stopCorrectness": "stop offered at turn 1, before labeled turn 10 — premature"
+      },
+      "costMicrocents": 9405250,
+      "latencyMs": 49561,
+      "calls": 4
+    },
+    {
+      "briefId": "ramen-inventory",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "premature-stop-offer",
+        "missed-tension"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"Prices change seasonally\"; missing required fact mentioning \"Windows laptop\"",
+        "contradictionHandling": "0 tension(s) raised vs 1 labeled",
+        "stopCorrectness": "stop offered at turn 1, before labeled turn 3 — premature"
+      },
+      "costMicrocents": 10480750,
+      "latencyMs": 45816,
+      "calls": 4
+    },
+    {
+      "briefId": "school-pickup-roster",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "premature-stop-offer",
+        "missed-tension"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"a swap arranged by text was forgotten\"; missing required decision mentioning \"swap must be explicitly approved by the parent taking it over\"",
+        "contradictionHandling": "0 tension(s) raised vs 1 labeled",
+        "stopCorrectness": "stop offered at turn 1, before labeled turn 7 — premature"
+      },
+      "costMicrocents": 8987150,
+      "latencyMs": 43137,
+      "calls": 4
+    },
+    {
+      "briefId": "teatime-newsletter",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "premature-stop-offer",
+        "missed-tension",
+        "redundant-question"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"error-prone;\"; missing required fact mentioning \"people subscribe through a link\"",
+        "questionEfficiency": "turn 1: asked [success], owner preferred [workflow] — miss; core coverage complete after turn 1",
+        "contradictionHandling": "0 tension(s) raised vs 1 labeled",
+        "stopCorrectness": "stop offered at turn 2, before labeled turn 10 — premature"
+      },
+      "costMicrocents": 16879655,
+      "latencyMs": 68860,
+      "calls": 7
+    },
+    {
+      "briefId": "till-shift-notes",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"Handover today is word of mouth\"; missing required decision mentioning \"code and alarm word should not live in the tool\""
+      },
+      "costMicrocents": 32164210,
+      "latencyMs": 141618,
+      "calls": 9
+    },
+    {
+      "briefId": "van-maintenance-log",
+      "pass": false,
+      "taxonomyCodes": [
+        "missed-core-gap",
+        "redundant-question"
+      ],
+      "failedDimensionDetails": {
+        "extractionCoverage": "missing required fact mentioning \"reminder was a sticky note in a different van\"; missing required fact mentioning \"completed work gets entered from the invoice\"",
+        "questionEfficiency": "turn 1: asked [data, quality, success], owner preferred [workflow] — miss; core coverage complete after turn 0"
+      },
+      "costMicrocents": 30803610,
+      "latencyMs": 119788,
+      "calls": 9
+    }
+  ],
+  "dimensionPassRates": {
+    "extractionCoverage": {
+      "passed": 0,
+      "applicable": 12
+    },
+    "questionEfficiency": {
+      "passed": 3,
+      "applicable": 8
+    },
+    "contradictionHandling": {
+      "passed": 4,
+      "applicable": 10
+    },
+    "stopCorrectness": {
+      "passed": 1,
+      "applicable": 7
+    },
+    "contractDiscipline": {
+      "passed": 12,
+      "applicable": 12
+    }
+  },
+  "taxonomyCounts": {
+    "contract-violation": 0,
+    "invented-fact": 0,
+    "premature-stop-offer": 6,
+    "missed-stop": 0,
+    "wrong-citation": 0,
+    "missed-tension": 6,
+    "false-tension": 0,
+    "missed-core-gap": 12,
+    "redundant-question": 5,
+    "overlong-bundled-question": 0
+  },
+  "judgeAgreement": [
+    {
+      "dimension": "faithfulness",
+      "exact": 0.7898089171974523,
+      "withinOne": 0.7898089171974523,
+      "samples": 157,
+      "inventedRecall": 0.5294117647058824,
+      "trusted": false,
+      "untrustedReason": "agreement 0.79 below the exact threshold 0.9; judge detected 18 of 34 owner-labeled invented statement(s) — invention recall 0.53 below the required 1.00"
+    },
+    {
+      "dimension": "usefulness",
+      "exact": 0,
+      "withinOne": 0.5,
+      "samples": 8,
+      "inventedRecall": null,
+      "trusted": false,
+      "untrustedReason": "8 sample(s), fewer than the 10 required; agreement 0.50 below the within-one threshold 0.8"
+    },
+    {
+      "dimension": "sufficiency",
+      "exact": 0.08333333333333333,
+      "withinOne": 0.5833333333333334,
+      "samples": 12,
+      "inventedRecall": null,
+      "trusted": false,
+      "untrustedReason": "agreement 0.58 below the within-one threshold 0.8"
+    }
+  ],
+  "judgedScoreMeans": [
+    {
+      "dimension": "faithfulness",
+      "mean": 0.7770700636942676,
+      "samples": 157,
+      "trusted": false
+    },
+    {
+      "dimension": "usefulness",
+      "mean": 3.25,
+      "samples": 8,
+      "trusted": false
+    },
+    {
+      "dimension": "sufficiency",
+      "mean": 2.1666666666666665,
+      "samples": 12,
+      "trusted": false
+    }
+  ],
+  "phaseSpend": {
+    "capMicrocents": 1500000000,
+    "settledActualMicrocents": 906130595,
+    "unresolvedReservationMicrocents": 85536000,
+    "remainingMicrocents": 508333405,
+    "consultantSettledMicrocents": 875897495,
+    "judgeSettledMicrocents": 30233100
+  },
+  "notes": [
+    "Judged faithfulness mean 0.78 EXCLUDED from thresholds: dimension untrusted by calibration.",
+    "Judged usefulness mean 3.25 EXCLUDED from thresholds: dimension untrusted by calibration.",
+    "Judged sufficiency mean 2.17 EXCLUDED from thresholds: dimension untrusted by calibration.",
+    "No baseline report designated; baseline comparison skipped. The first owner-accepted report becomes the baseline in eval/thresholds.json."
+  ]
+}
