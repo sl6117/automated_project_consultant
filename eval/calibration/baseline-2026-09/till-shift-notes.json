@@ -1,18 +1,14 @@
 {
   "briefId": "till-shift-notes",
   "runId": "baseline-2026-09",
-  "status": "template",
+  "status": "authored",
   "instructions": "Owner-authored only. Judge THIS RUN's transcript (see the companion .transcript.md): list the statement indexes that are invented relative to the brief, score each listed turn's question usefulness 1-5, score the artifact set's minimum-sufficiency 1-5, then set status to \"authored\". Placeholder 3s must be replaced with your real scores.",
-  "inventedStatementIndexes": [],
+  "inventedStatementIndexes": [4, 5,6,8],
   "usefulnessByTurn": [
     {
       "turn": 1,
-      "score": 3
-    },
-    {
-      "turn": 2,
-      "score": 3
+      "score": 1
     }
   ],
-  "minimumSufficiency": 3
+  "minimumSufficiency": 1
 }
