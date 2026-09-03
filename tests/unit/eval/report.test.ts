@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
@@ -131,6 +131,24 @@ describe("report writing", () => {
     expect(() =>
       writeReport(dir, "baseline", report({ phaseSpend: spend }), []),
     ).toThrow(/append-only/);
+  });
+
+  test("the first report creates a missing reports directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "eval-reports-"));
+    dirs.push(root);
+    // eval/reports/ does not exist until the first report is written, so
+    // the writer must create it (including intermediate segments) itself.
+    const reportsDir = join(root, "eval", "reports");
+    expect(existsSync(reportsDir)).toBe(false);
+    const written = writeReport(
+      reportsDir,
+      "baseline",
+      report({ phaseSpend: spend }),
+      [],
+    );
+    expect(written.jsonPath).toBe(join(reportsDir, "2026-08-31-baseline.json"));
+    expect(existsSync(written.jsonPath)).toBe(true);
+    expect(existsSync(written.mdPath)).toBe(true);
   });
 
   test("a report without readable budget state is refused, not written", () => {

@@ -1,4 +1,9 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { DimensionAgreement } from "./calibration";
@@ -271,6 +276,9 @@ export function writeReport(
       );
     }
   }
+  // The first report of a phase creates eval/reports/ itself; the directory
+  // is not committed until a report lives in it.
+  mkdirSync(reportsDir, { recursive: true });
   writeFileSync(jsonPath, JSON.stringify(report, null, 2) + "\n", "utf8");
   writeFileSync(mdPath, renderReportMarkdown(report, breaches), "utf8");
   return { jsonPath, mdPath };
