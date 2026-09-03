@@ -102,7 +102,11 @@ const scriptedJudge: JudgeClient = {
   },
 };
 
-function writeBrief(root: string, id: string): void {
+function writeBrief(
+  root: string,
+  id: string,
+  labelOverrides: Record<string, unknown> = {},
+): void {
   const dir = join(root, "briefs", id);
   mkdirSync(dir, { recursive: true });
   writeFileSync(
@@ -130,6 +134,7 @@ function writeBrief(root: string, id: string): void {
       expectedTensions: [],
       stopTurn: 1,
       questionRankings: [],
+      ...labelOverrides,
     }),
     "utf8",
   );
@@ -439,6 +444,103 @@ describe("capture campaign", () => {
     );
     expect(overridden.completedBriefIds).toEqual(["alpha"]);
     expect(overridden.finalized).toBe(true);
+  });
+
+  test("calibration template scores only ranked turns that occurred", async () => {
+    const root = tempRoot();
+    // Rankings name turn 1 (occurs) and turn 5 (never occurs); the
+    // consultation also produces an unranked turn 2. The template must
+    // pre-fill exactly the judge-scorable set — rankings ∩ occurred turns —
+    // or calibration later fails closed on owner-scored turns the judge
+    // never scored.
+    writeBrief(root, "alpha", {
+      questionRankings: [
+        { turn: 1, preferredCodes: ["workflow"] },
+        { turn: 5, preferredCodes: ["success"] },
+      ],
+    });
+    initializeBudget(join(root, "budget.jsonl"), {
+      capMicrocents: 1_500_000_000,
+      note: "test",
+    });
+
+    // Two asks before the ready offer: extraction covers problem and user,
+    // each incremental pass covers one more core code.
+    let incrementalCalls = 0;
+    const twoAsk: ModelClient = {
+      executionProvenance: "synthetic",
+      async extractFromIdea(input) {
+        return {
+          payload: {
+            statements: [
+              { kind: "fact", body: `Project ${input.projectName}.` },
+            ],
+            concerns: [
+              { code: "problem", coverage: "p" },
+              { code: "user", coverage: "u" },
+            ],
+          },
+          usage,
+        };
+      },
+      async incrementalExtraction() {
+        incrementalCalls += 1;
+        return {
+          payload: {
+            statements: [],
+            concerns: [
+              incrementalCalls === 1
+                ? { code: "workflow", coverage: "w" }
+                : { code: "success", coverage: "s" },
+            ],
+          },
+          usage,
+        };
+      },
+      async nextQuestion(input) {
+        const missing = input.context.missingCoreCodes;
+        return {
+          payload: {
+            task: "next_question",
+            payload: {
+              candidates: [
+                {
+                  body: missing.length > 0 ? `About ${missing[0]}?` : "Anything else?",
+                  whySelected: "w",
+                  concernCodes: missing.length > 0 ? [missing[0]] : ["quality"],
+                  claimedScores: {
+                    coreGap: 0,
+                    sliceBounding: 0,
+                    contradictionResolution: 0,
+                  },
+                  targetsContradictionIndexes: [],
+                },
+              ],
+              contradictions: [],
+              readyAdvice:
+                missing.length > 0
+                  ? { ready: false, why: "core gaps remain" }
+                  : { ready: true, why: "covered" },
+            },
+          },
+          usage,
+        };
+      },
+      async coachRecommendation() {
+        throw new Error("never called");
+      },
+    };
+
+    const result = await runCaptureCampaign(
+      campaignInput(root, { consultant: twoAsk }),
+    );
+    expect(result.completedBriefIds).toEqual(["alpha"]);
+
+    const template = JSON.parse(
+      readFileSync(join(root, "calibration", "run-one", "alpha.json"), "utf8"),
+    );
+    // Turn 2 occurred but is unranked; turn 5 is ranked but never occurred.
+    expect(template.usefulnessByTurn).toEqual([{ turn: 1, score: 3 }]);
   });
 
   test("a brief is refused when the per-brief caps no longer fit the remaining budget", async () => {

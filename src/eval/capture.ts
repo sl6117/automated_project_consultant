@@ -15,6 +15,7 @@ import {
 } from "./budgeted-client";
 import { createCapturingModelClient } from "./capture-client";
 import { loadCorpus } from "./corpus";
+import type { BriefLabels } from "./corpus-schemas";
 import { createCapturingJudgeClient, type JudgeClient } from "./judge-client";
 import { judgeTranscript } from "./judge-run";
 import {
@@ -211,6 +212,7 @@ export async function runCaptureCampaign(input: {
           input.calibrationDir,
           input.runId,
           transcript,
+          labels,
         );
         completed.push(brief.id);
         succeeded = true;
@@ -294,6 +296,7 @@ function writeCalibrationTemplate(
   calibrationDir: string,
   runId: string,
   transcript: ReplayTranscript,
+  labels: BriefLabels,
 ): void {
   const dir = join(calibrationDir, runId);
   mkdirSync(dir, { recursive: true });
@@ -309,10 +312,17 @@ function writeCalibrationTemplate(
     instructions:
       "Owner-authored only. Judge THIS RUN's transcript (see the companion .transcript.md): list the statement indexes that are invented relative to the brief, score each listed turn's question usefulness 1-5, score the artifact set's minimum-sufficiency 1-5, then set status to \"authored\". Placeholder 3s must be replaced with your real scores.",
     inventedStatementIndexes: [],
-    usefulnessByTurn: transcript.turns.map((turn) => ({
-      turn: turn.turn,
-      score: 3,
-    })),
+    // Only turns the judge will score: the owner's questionRankings that
+    // actually occurred (judge-run.ts skips rankings for absent turns, and
+    // calibration fails closed on any owner-scored turn the judge lacks).
+    usefulnessByTurn: labels.questionRankings
+      .filter((ranking) =>
+        transcript.turns.some((turn) => turn.turn === ranking.turn),
+      )
+      .map((ranking) => ({
+        turn: ranking.turn,
+        score: 3,
+      })),
     minimumSufficiency: 3,
   };
   const companion = [
